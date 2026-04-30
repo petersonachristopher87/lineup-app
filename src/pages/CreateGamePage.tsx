@@ -1,0 +1,147 @@
+import { FormEvent, useState } from 'react'
+import { useCreateGame } from '@/hooks/useGames'
+import { useTeamSettings } from '@/hooks/useTeams'
+import { useNavigate } from 'react-router-dom'
+
+interface CreateGamePageProps {
+  teamId: string
+}
+
+export function CreateGamePage({ teamId }: CreateGamePageProps) {
+  const navigate = useNavigate()
+  const { data: settings } = useTeamSettings(teamId)
+  const createGame = useCreateGame()
+
+  const [formData, setFormData] = useState({
+    opponent_name: '',
+    game_date: new Date().toISOString().split('T')[0],
+    game_time: '18:00',
+    location: '',
+    innings_count: settings?.innings_per_game_default || 6,
+  })
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      const gameDateTime = `${formData.game_date}T${formData.game_time}:00`
+      await createGame.mutateAsync({
+        teamId,
+        gameData: {
+          opponent_name: formData.opponent_name,
+          game_date: gameDateTime,
+          location: formData.location,
+          innings_count: formData.innings_count,
+        },
+      })
+      navigate(`/team/${teamId}/games`)
+    } catch (error) {
+      console.error('Failed to create game:', error)
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Schedule New Game</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="opponent" className="block text-sm font-medium text-gray-700">
+              Opponent Name
+            </label>
+            <input
+              id="opponent"
+              type="text"
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={formData.opponent_name}
+              onChange={(e) => setFormData({ ...formData, opponent_name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                Date
+              </label>
+              <input
+                id="date"
+                type="date"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.game_date}
+                onChange={(e) => setFormData({ ...formData, game_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+                Time
+              </label>
+              <input
+                id="time"
+                type="time"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.game_time}
+                onChange={(e) => setFormData({ ...formData, game_time: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <input
+              id="location"
+              type="text"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="innings" className="block text-sm font-medium text-gray-700">
+              Number of Innings
+            </label>
+            <input
+              id="innings"
+              type="number"
+              min="1"
+              max="12"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={formData.innings_count}
+              onChange={(e) => setFormData({ ...formData, innings_count: parseInt(e.target.value) })}
+            />
+          </div>
+
+          {createGame.error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-800">
+                {createGame.error instanceof Error ? createGame.error.message : 'Failed to create game'}
+              </p>
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={createGame.isPending}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {createGame.isPending ? 'Creating...' : 'Create Game'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
