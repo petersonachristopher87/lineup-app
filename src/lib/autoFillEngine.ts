@@ -178,8 +178,11 @@ export function autoFillPositions(ctx: AutoFillContext): AutoFillAssignment[] {
       })
     for (let i = 0; i < remaining.length; i++) {
       const p = remaining[i]
-      const benchPos =
-        benchPositions[i] ?? benchPositions[benchPositions.length - 1] ?? 'BENCH'
+      // BENCH1/2/3 are unique-per-inning by the partial unique constraint —
+      // only the literal 'BENCH' position allows multiple players per inning.
+      // If we overflow past the available numbered slots, route the rest to
+      // 'BENCH' so the upsert doesn't 409.
+      const benchPos = benchPositions[i] ?? 'BENCH'
       assignments.push({ inning, player_id: p.id, position: benchPos })
 
       const s = stats[p.id]

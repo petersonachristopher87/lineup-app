@@ -250,6 +250,16 @@ CREATE POLICY "Head coaches can update settings"
     )
   );
 
+CREATE POLICY "Head coaches can insert settings"
+  ON team_settings FOR INSERT
+  WITH CHECK (
+    team_id IN (
+      SELECT id FROM teams WHERE created_by = auth.uid()
+      UNION
+      SELECT team_id FROM team_members WHERE user_id = auth.uid() AND role = 'head_coach'
+    )
+  );
+
 -- Games: all team members can view, head coaches can edit
 CREATE POLICY "Team members can view games"
   ON games FOR SELECT

@@ -142,9 +142,17 @@ export function RosterPage({ teamId }: RosterPageProps) {
                 <label className="block text-sm font-medium text-gray-700">Jersey Number</label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                   value={formData.jersey_number}
-                  onChange={(e) => setFormData({ ...formData, jersey_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      jersey_number: e.target.value.replace(/\D/g, ''),
+                    })
+                  }
                 />
               </div>
               <div>
@@ -299,10 +307,8 @@ export function RosterPage({ teamId }: RosterPageProps) {
                   key={player.id}
                   player={player}
                   onSave={async (updates) => {
-                    // Don't auto-close; let PlayerEditRow display the "Saved"
-                    // state so the user knows the change persisted. Cancel
-                    // closes the row when they're done.
                     await updatePlayer.mutateAsync({ playerId: player.id, updates })
+                    setEditingId(null)
                   }}
                   onCancel={() => setEditingId(null)}
                   isSaving={updatePlayer.isPending}
@@ -411,9 +417,14 @@ function PlayerEditRow({ player, onSave, onCancel, isSaving }: PlayerEditRowProp
       <div className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_90px] gap-2 mb-2">
         <input
           type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={3}
           placeholder="#"
           value={draft.jersey_number}
-          onChange={(e) => setDraft({ ...draft, jersey_number: e.target.value })}
+          onChange={(e) =>
+            setDraft({ ...draft, jersey_number: e.target.value.replace(/\D/g, '') })
+          }
           className="px-2 py-1 border border-gray-300 rounded text-gray-900 bg-white"
         />
         <input
