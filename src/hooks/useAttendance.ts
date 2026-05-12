@@ -37,3 +37,21 @@ export function useInitializeGameAttendance() {
     },
   })
 }
+
+export function useBulkSetAttendance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      gameId,
+      playerIds,
+      status,
+    }: {
+      gameId: string
+      playerIds: string[]
+      status: 'attending' | 'absent' | 'maybe'
+    }) => attendanceService.bulkSetAttendance(gameId, playerIds, status),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ['gameAttendance', gameId] })
+    },
+  })
+}

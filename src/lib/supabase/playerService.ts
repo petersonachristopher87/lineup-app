@@ -31,6 +31,7 @@ export const playerService = {
     first_name: string
     last_name: string
     jersey_number?: string
+    birth_year?: number | null
     preferred_positions?: string[]
     restricted_positions?: string[]
     notes?: string

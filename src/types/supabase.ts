@@ -6,9 +6,10 @@ export type Database = {
         Row: {
           id: string
           name: string
-          level: 'single_a' | 'aa' | 'aaa' | 'coast' | 'majors'
+          level: 'a' | 'aa' | 'aaa' | 'coast' | 'majors'
           sport: 'baseball' | 'softball'
           season_year: number
+          logo_url: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -16,9 +17,10 @@ export type Database = {
         Insert: {
           id?: string
           name: string
-          level: 'single_a' | 'aa' | 'aaa' | 'coast' | 'majors'
+          level: 'a' | 'aa' | 'aaa' | 'coast' | 'majors'
           sport: 'baseball' | 'softball'
           season_year: number
+          logo_url?: string | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -26,13 +28,15 @@ export type Database = {
         Update: {
           id?: string
           name?: string
-          level?: 'single_a' | 'aa' | 'aaa' | 'coast' | 'majors'
+          level?: 'a' | 'aa' | 'aaa' | 'coast' | 'majors'
           sport?: 'baseball' | 'softball'
           season_year?: number
+          logo_url?: string | null
           created_by?: string
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       team_members: {
         Row: {
@@ -59,6 +63,40 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      team_invitations: {
+        Row: {
+          id: string
+          team_id: string
+          email: string
+          role: 'head_coach' | 'assistant_coach'
+          created_by: string
+          created_at: string
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          email: string
+          role: 'head_coach' | 'assistant_coach'
+          created_by: string
+          created_at?: string
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          email?: string
+          role?: 'head_coach' | 'assistant_coach'
+          created_by?: string
+          created_at?: string
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+        }
+        Relationships: []
       }
       players: {
         Row: {
@@ -67,6 +105,7 @@ export type Database = {
           first_name: string
           last_name: string
           jersey_number: string | null
+          birth_year: number | null
           preferred_positions: string[] | null
           restricted_positions: string[] | null
           notes: string | null
@@ -81,6 +120,7 @@ export type Database = {
           first_name: string
           last_name: string
           jersey_number?: string | null
+          birth_year?: number | null
           preferred_positions?: string[] | null
           restricted_positions?: string[] | null
           notes?: string | null
@@ -95,6 +135,7 @@ export type Database = {
           first_name?: string
           last_name?: string
           jersey_number?: string | null
+          birth_year?: number | null
           preferred_positions?: string[] | null
           restricted_positions?: string[] | null
           notes?: string | null
@@ -103,6 +144,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       team_settings: {
         Row: {
@@ -138,6 +180,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       games: {
         Row: {
@@ -147,6 +190,7 @@ export type Database = {
           game_date: string
           location: string | null
           innings_count: number
+          innings_played: number | null
           status: 'planned' | 'in_progress' | 'complete' | 'cancelled'
           notes: string | null
           created_at: string
@@ -159,6 +203,7 @@ export type Database = {
           game_date: string
           location?: string | null
           innings_count?: number
+          innings_played?: number | null
           status?: 'planned' | 'in_progress' | 'complete' | 'cancelled'
           notes?: string | null
           created_at?: string
@@ -171,11 +216,13 @@ export type Database = {
           game_date?: string
           location?: string | null
           innings_count?: number
+          innings_played?: number | null
           status?: 'planned' | 'in_progress' | 'complete' | 'cancelled'
           notes?: string | null
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       game_attendance: {
         Row: {
@@ -202,6 +249,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       lineups: {
         Row: {
@@ -225,6 +273,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       position_assignments: {
         Row: {
@@ -254,6 +303,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       pitch_log: {
         Row: {
@@ -283,10 +333,11 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
     }
-    Views: {}
-    Functions: {}
-    Enums: {}
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
   }
 }

@@ -1,42 +1,63 @@
-import { FormEvent, useState } from 'react'
-import { useCreateGame } from '@/hooks/useGames'
-import { useTeamSettings } from '@/hooks/useTeams'
+import { FormEvent, useEffect, useState } from 'react'
+import { useGameById, useUpdateGame } from '@/hooks/useGames'
 import { useNavigate } from 'react-router-dom'
 
-interface CreateGamePageProps {
+interface EditGamePageProps {
   teamId: string
+  gameId: string
 }
 
-export function CreateGamePage({ teamId }: CreateGamePageProps) {
+export function EditGamePage({ teamId, gameId }: EditGamePageProps) {
   const navigate = useNavigate()
-  const { data: settings } = useTeamSettings(teamId)
-  const createGame = useCreateGame()
+  const { data: game } = useGameById(gameId)
+  const updateGame = useUpdateGame()
 
   const [formData, setFormData] = useState({
     opponent_name: '',
-    game_date: new Date().toISOString().split('T')[0],
-    game_time: '18:00',
+    game_date: '',
+    game_time: '',
     location: '',
-    innings_count: settings?.innings_per_game_default || 6,
+    innings_count: 6,
   })
+
+  useEffect(() => {
+    if (!game) return
+    const date = new Date(game.game_date)
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    const hh = String(date.getHours()).padStart(2, '0')
+    const min = String(date.getMinutes()).padStart(2, '0')
+    setFormData({
+      opponent_name: game.opponent_name,
+      game_date: `${yyyy}-${mm}-${dd}`,
+      game_time: `${hh}:${min}`,
+      location: game.location ?? '',
+      innings_count: game.innings_count ?? 6,
+    })
+  }, [game])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
       const gameDateTime = `${formData.game_date}T${formData.game_time}:00`
-      await createGame.mutateAsync({
-        teamId,
-        gameData: {
+      await updateGame.mutateAsync({
+        gameId,
+        updates: {
           opponent_name: formData.opponent_name,
           game_date: gameDateTime,
-          location: formData.location,
+          location: formData.location || null,
           innings_count: formData.innings_count,
         },
       })
       navigate(`/team/${teamId}/games`)
     } catch (error) {
-      console.error('Failed to create game:', error)
+      console.error('Failed to update game:', error)
     }
+  }
+
+  if (!game) {
+    return <div className="text-center py-12 text-gray-900">Loading...</div>
   }
 
   return (
@@ -56,7 +77,7 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
         </button>
       </div>
       <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Schedule New Game</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Game</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -67,7 +88,7 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
               id="opponent"
               type="text"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={formData.opponent_name}
               onChange={(e) => setFormData({ ...formData, opponent_name: e.target.value })}
             />
@@ -82,7 +103,7 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
                 id="date"
                 type="date"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.game_date}
                 onChange={(e) => setFormData({ ...formData, game_date: e.target.value })}
               />
@@ -95,7 +116,7 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
                 id="time"
                 type="time"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.game_time}
                 onChange={(e) => setFormData({ ...formData, game_time: e.target.value })}
               />
@@ -109,7 +130,7 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
             <input
               id="location"
               type="text"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             />
@@ -124,16 +145,20 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
               type="number"
               min="1"
               max="12"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={formData.innings_count}
-              onChange={(e) => setFormData({ ...formData, innings_count: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFormData({ ...formData, innings_count: parseInt(e.target.value) || 1 })
+              }
             />
           </div>
 
-          {createGame.error && (
+          {updateGame.error && (
             <div className="rounded-md bg-red-50 p-4">
               <p className="text-sm font-medium text-red-800">
-                {createGame.error instanceof Error ? createGame.error.message : 'Failed to create game'}
+                {updateGame.error instanceof Error
+                  ? updateGame.error.message
+                  : 'Failed to update game'}
               </p>
             </div>
           )}
@@ -141,15 +166,15 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
           <div className="flex space-x-4">
             <button
               type="submit"
-              disabled={createGame.isPending}
+              disabled={updateGame.isPending}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {createGame.isPending ? 'Creating...' : 'Create Game'}
+              {updateGame.isPending ? 'Saving...' : 'Save'}
             </button>
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-bold py-2 px-4 rounded"
+              className="flex-1 bg-white hover:bg-gray-100 text-gray-900 font-semibold py-2 px-4 rounded border border-gray-400"
             >
               Cancel
             </button>

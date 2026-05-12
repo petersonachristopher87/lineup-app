@@ -1,22 +1,52 @@
 import { FormEvent, useState } from 'react'
-import { useCreateTeam } from '@/hooks/useTeams'
+import { useCreateTeam, useUserTeams } from '@/hooks/useTeams'
 import { useNavigate } from 'react-router-dom'
 
+type Level = 'a' | 'aa' | 'aaa' | 'coast' | 'majors'
+type Sport = 'baseball' | 'softball'
+
 export function CreateTeamPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    level: Level
+    sport: Sport
+    season_year: number
+    copyFromTeamId: string
+  }>({
     name: '',
-    level: 'aa' as const,
-    sport: 'baseball' as const,
+    level: 'aa',
+    sport: 'baseball',
     season_year: new Date().getFullYear(),
+    copyFromTeamId: '',
   })
 
   const createTeam = useCreateTeam()
+  const { data: existingTeams = [] } = useUserTeams()
   const navigate = useNavigate()
+
+  const handleCopyFromChange = (sourceId: string) => {
+    setFormData((prev) => {
+      const next = { ...prev, copyFromTeamId: sourceId }
+      const source = existingTeams.find((t) => t.id === sourceId)
+      if (source) {
+        // Inherit league level + sport from source as a starting point.
+        next.level = source.level as Level
+        next.sport = source.sport as Sport
+      }
+      return next
+    })
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
-      const team = await createTeam.mutateAsync(formData)
+      const team = await createTeam.mutateAsync({
+        name: formData.name,
+        level: formData.level,
+        sport: formData.sport,
+        season_year: formData.season_year,
+        copyFromTeamId: formData.copyFromTeamId || undefined,
+      })
       navigate(`/team/${team.id}`)
     } catch (error) {
       console.error('Failed to create team:', error)
@@ -25,10 +55,46 @@ export function CreateTeamPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+      <div className="max-w-md mx-auto">
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-semibold mb-4"
+        >
+          🏠 Home
+        </button>
+        <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Your Team</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {existingTeams.length > 0 && (
+            <div>
+              <label htmlFor="copy-from" className="block text-sm font-medium text-gray-700">
+                Copy from existing team{' '}
+                <span className="text-gray-500 font-normal">(optional)</span>
+              </label>
+              <select
+                id="copy-from"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.copyFromTeamId}
+                onChange={(e) => handleCopyFromChange(e.target.value)}
+              >
+                <option value="">Don't copy — use level defaults</option>
+                {existingTeams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} · {t.level.toUpperCase()} · {t.season_year}
+                  </option>
+                ))}
+              </select>
+              {formData.copyFromTeamId && (
+                <p className="mt-1 text-xs text-gray-600">
+                  Copies the active roster only (players + jersey #, birth
+                  year, preferred/restricted positions). Settings come from
+                  the new level's defaults. Games are not copied.
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Team Name
@@ -53,11 +119,11 @@ export function CreateTeamPage() {
               value={formData.level}
               onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
             >
-              <option value="single_a">Single-A (Coach Pitch, ~6-7 yrs)</option>
-              <option value="aa">AA (Kid Pitch, ~8-9 yrs)</option>
-              <option value="aaa">AAA (~10-11 yrs)</option>
-              <option value="coast">Coast (~11-12 yrs)</option>
-              <option value="majors">Majors (~11-12 yrs)</option>
+              <option value="a">A (Coach Pitch, ~6-7 yrs)</option>
+              <option value="aa">AA (Machine Pitch ~7-8)</option>
+              <option value="aaa">AAA (Kid Pitch ~8-10)</option>
+              <option value="coast">Coach (~10-11)</option>
+              <option value="majors">Majors (~11-12)</option>
             </select>
           </div>
 
@@ -105,6 +171,7 @@ export function CreateTeamPage() {
             {createTeam.isPending ? 'Creating...' : 'Create Team'}
           </button>
         </form>
+        </div>
       </div>
     </div>
   )

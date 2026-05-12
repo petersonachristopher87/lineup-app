@@ -59,6 +59,23 @@ export const attendanceService = {
     if (error) throw error
   },
 
+  async bulkSetAttendance(
+    gameId: string,
+    playerIds: string[],
+    status: 'attending' | 'absent' | 'maybe'
+  ) {
+    if (playerIds.length === 0) return
+    const rows = playerIds.map((playerId) => ({
+      game_id: gameId,
+      player_id: playerId,
+      status,
+    }))
+    const { error } = await supabase
+      .from('game_attendance')
+      .upsert(rows, { onConflict: 'game_id,player_id' })
+    if (error) throw error
+  },
+
   async subscribeToAttendanceUpdates(gameId: string, callback: (attendance: any) => void) {
     return supabase
       .channel(`attendance:${gameId}`)

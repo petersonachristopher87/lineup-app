@@ -2,9 +2,10 @@
 CREATE TABLE teams (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
-  level text NOT NULL CHECK (level IN ('single_a', 'aa', 'aaa', 'coast', 'majors')),
+  level text NOT NULL CHECK (level IN ('a', 'aa', 'aaa', 'coast', 'majors')),
   sport text NOT NULL CHECK (sport IN ('baseball', 'softball')),
   season_year integer NOT NULL,
+  logo_url text,
   created_by uuid NOT NULL REFERENCES auth.users(id),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -21,6 +22,18 @@ CREATE TABLE team_members (
   UNIQUE(team_id, user_id)
 );
 
+-- Invitations: head coaches invite assistants by email; claim happens on sign-in
+CREATE TABLE team_invitations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  role text NOT NULL CHECK (role IN ('head_coach', 'assistant_coach')),
+  created_by uuid NOT NULL REFERENCES auth.users(id),
+  created_at timestamptz DEFAULT now(),
+  accepted_at timestamptz,
+  accepted_by_user_id uuid REFERENCES auth.users(id)
+);
+
 -- Create players table
 CREATE TABLE players (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,6 +41,7 @@ CREATE TABLE players (
   first_name text NOT NULL,
   last_name text NOT NULL,
   jersey_number text,
+  birth_year integer,
   preferred_positions text[] DEFAULT ARRAY[]::text[],
   restricted_positions text[] DEFAULT ARRAY[]::text[],
   notes text,
@@ -58,6 +72,7 @@ CREATE TABLE games (
   game_date timestamptz NOT NULL,
   location text,
   innings_count integer DEFAULT 6,
+  innings_played integer,
   status text NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'in_progress', 'complete', 'cancelled')),
   notes text,
   created_at timestamptz DEFAULT now(),
@@ -93,9 +108,12 @@ CREATE TABLE position_assignments (
   position text NOT NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
-  UNIQUE(game_id, inning, player_id),
-  UNIQUE(game_id, inning, position) WHERE position != 'BENCH'
+  UNIQUE(game_id, inning, player_id)
 );
+
+CREATE UNIQUE INDEX position_assignments_unique_non_bench
+  ON position_assignments(game_id, inning, position)
+  WHERE position != 'BENCH';
 
 -- Create pitch_log table
 CREATE TABLE pitch_log (
@@ -119,6 +137,11 @@ CREATE INDEX idx_position_assignments_game_inning ON position_assignments(game_i
 CREATE INDEX idx_position_assignments_player ON position_assignments(player_id);
 CREATE INDEX idx_pitch_log_player ON pitch_log(player_id);
 CREATE INDEX idx_pitch_log_game ON pitch_log(game_id);
+
+-- Grant base privileges to Supabase roles (RLS layered on top)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
 
 -- Enable Row-Level Security
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
@@ -155,16 +178,15 @@ CREATE POLICY "Head coaches can update team"
     )
   );
 
+CREATE POLICY "Team creators can delete teams"
+  ON teams FOR DELETE
+  USING (created_by = auth.uid());
+
 -- Team members: only head coaches can manage
-CREATE POLICY "Users can view team members of teams they're in"
+-- Simplified to avoid recursion: users can only see their own membership rows.
+CREATE POLICY "Users can view their own team memberships"
   ON team_members FOR SELECT
-  USING (
-    team_id IN (
-      SELECT id FROM teams WHERE created_by = auth.uid()
-      UNION
-      SELECT team_id FROM team_members WHERE user_id = auth.uid()
-    )
-  );
+  USING (user_id = auth.uid());
 
 CREATE POLICY "Head coaches can add team members"
   ON team_members FOR INSERT
@@ -360,6 +382,18 @@ CREATE POLICY "Team members can manage position assignments"
 
 CREATE POLICY "Team members can update position assignments"
   ON position_assignments FOR UPDATE
+  USING (
+    game_id IN (
+      SELECT id FROM games WHERE team_id IN (
+        SELECT id FROM teams WHERE created_by = auth.uid()
+        UNION
+        SELECT team_id FROM team_members WHERE user_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Team members can delete position assignments"
+  ON position_assignments FOR DELETE
   USING (
     game_id IN (
       SELECT id FROM games WHERE team_id IN (

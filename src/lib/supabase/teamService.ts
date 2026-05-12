@@ -1,6 +1,6 @@
 import { supabase } from './client'
 import type { Database } from '@/types/supabase'
-import { LEVEL_TEMPLATES } from '@/lib/levelTemplates'
+import { getTemplate } from '@/lib/templateOverrides'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type TeamInsert = Database['public']['Tables']['teams']['Insert']
@@ -9,12 +9,28 @@ type TeamSettings = Database['public']['Tables']['team_settings']['Row']
 export const teamService = {
   async createTeam(data: {
     name: string
-    level: 'single_a' | 'aa' | 'aaa' | 'coast' | 'majors'
+    level: 'a' | 'aa' | 'aaa' | 'coast' | 'majors'
     sport: 'baseball' | 'softball'
     season_year: number
+    copyFromTeamId?: string
   }) {
     const { data: user } = await supabase.auth.getUser()
     if (!user.user) throw new Error('User not authenticated')
+
+    // If we're cloning, fetch source players BEFORE creating the new team so
+    // a fetch failure doesn't leave an orphan row behind. Settings always
+    // come from the level template — only the roster carries over.
+    let sourcePlayers: Database['public']['Tables']['players']['Row'][] = []
+    if (data.copyFromTeamId) {
+      const { data: pl, error: plErr } = await supabase
+        .from('players')
+        .select('*')
+        .eq('team_id', data.copyFromTeamId)
+        .eq('active', true)
+      if (plErr) throw plErr
+      sourcePlayers =
+        (pl as Database['public']['Tables']['players']['Row'][]) ?? []
+    }
 
     const teamData: TeamInsert = {
       name: data.name,
@@ -32,22 +48,24 @@ export const teamService = {
 
     if (teamError) throw teamError
 
-    // Create team_member entry for creator
-    const { error: memberError } = await supabase
-      .from('team_members')
-      .insert({
-        team_id: team.id,
-        user_id: user.user.id,
-        role: 'head_coach',
-      })
+    // If any downstream insert fails, roll back by deleting the team so we
+    // don't leave orphaned rows the user has to clean up manually.
+    try {
+      const { error: memberError } = await supabase
+        .from('team_members')
+        .insert({
+          team_id: team.id,
+          user_id: user.user.id,
+          role: 'head_coach',
+        })
 
-    if (memberError) throw memberError
+      if (memberError) throw memberError
 
-    // Create team_settings with level template
-    const template = LEVEL_TEMPLATES[data.level]
-    const { error: settingsError } = await supabase
-      .from('team_settings')
-      .insert({
+      // Settings: always seed from the level template (so a new season at a
+      // higher level picks up the right defaults rather than carrying old
+      // weights forward).
+      const template = getTemplate(data.level)
+      const settingsRow: Database['public']['Tables']['team_settings']['Insert'] = {
         team_id: team.id,
         equity_enabled: true,
         equity_weights: template.equityWeights,
@@ -58,23 +76,44 @@ export const teamService = {
         position_categories: template.positionCategories,
         innings_per_game_default: template.inningsPerGame,
         continuous_batting_order: template.continuousBattingOrder,
-      })
+      }
+      const { error: settingsError } = await supabase
+        .from('team_settings')
+        .insert(settingsRow)
+      if (settingsError) throw settingsError
 
-    if (settingsError) throw settingsError
+      // Players: clone with fresh ids
+      if (sourcePlayers.length > 0) {
+        const playerRows = sourcePlayers.map((p) => ({
+          team_id: team.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          jersey_number: p.jersey_number,
+          birth_year: p.birth_year,
+          preferred_positions: p.preferred_positions,
+          restricted_positions: p.restricted_positions,
+          notes: p.notes,
+          development_goals: p.development_goals,
+          active: true,
+        }))
+        const { error: playersError } = await supabase
+          .from('players')
+          .insert(playerRows)
+        if (playersError) throw playersError
+      }
+    } catch (err) {
+      await supabase.from('teams').delete().eq('id', team.id)
+      throw err
+    }
 
     return team
   },
 
   async getUserTeams() {
-    const { data: user } = await supabase.auth.getUser()
-    if (!user.user) throw new Error('User not authenticated')
-
     const { data, error } = await supabase
       .from('teams')
       .select('*')
-      .or(
-        `created_by.eq.${user.user.id},id.in.(select team_id from team_members where user_id = ${user.user.id})`
-      )
+      .order('created_at', { ascending: false })
 
     if (error) throw error
     return data as Team[]
@@ -89,6 +128,34 @@ export const teamService = {
 
     if (error) throw error
     return data as Team
+  },
+
+  async updateTeam(
+    teamId: string,
+    updates: Partial<Database['public']['Tables']['teams']['Update']>
+  ) {
+    const { data, error } = await supabase
+      .from('teams')
+      .update(updates)
+      .eq('id', teamId)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async deleteTeam(teamId: string) {
+    const { data, error } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', teamId)
+      .select()
+    if (error) throw error
+    if (!data || data.length === 0) {
+      throw new Error(
+        'Delete returned 0 rows. RLS may be blocking — verify the DELETE policy exists on the teams table.'
+      )
+    }
   },
 
   async getTeamSettings(teamId: string) {
@@ -131,7 +198,7 @@ export const teamService = {
   async getTeamMembers(teamId: string) {
     const { data, error } = await supabase
       .from('team_members')
-      .select('*, users:user_id(id, email)')
+      .select('*')
       .eq('team_id', teamId)
 
     if (error) throw error

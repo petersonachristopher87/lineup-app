@@ -6,8 +6,14 @@ import { CreateTeamPage } from '@/pages/CreateTeamPage'
 import { RosterPage } from '@/pages/RosterPage'
 import { GameListPage } from '@/pages/GameListPage'
 import { CreateGamePage } from '@/pages/CreateGamePage'
+import { EditGamePage } from '@/pages/EditGamePage'
 import { AttendancePage } from '@/pages/AttendancePage'
 import { LineupGridPage } from '@/pages/LineupGridPage'
+import { TeamDetailPage } from '@/pages/TeamDetailPage'
+import { TeamSettingsPage } from '@/pages/TeamSettingsPage'
+import { TeamProfilePage } from '@/pages/TeamProfilePage'
+import { ManageTemplatesPage } from '@/pages/ManageTemplatesPage'
+import { TeamSeasonStatsPage } from '@/pages/TeamSeasonStatsPage'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 
@@ -54,10 +60,50 @@ export function App() {
             }
           />
           <Route
+            path="/templates"
+            element={
+              <ProtectedRoute>
+                <ManageTemplatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/create-team"
             element={
               <ProtectedRoute>
                 <CreateTeamPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId"
+            element={
+              <ProtectedRoute>
+                <TeamRouteWrapper component={TeamDetailPage} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/profile"
+            element={
+              <ProtectedRoute>
+                <TeamRouteWrapper component={TeamProfilePage} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/stats"
+            element={
+              <ProtectedRoute>
+                <TeamRouteWrapper component={TeamSeasonStatsPage} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/settings"
+            element={
+              <ProtectedRoute>
+                <TeamRouteWrapper component={TeamSettingsPage} />
               </ProtectedRoute>
             }
           />
@@ -82,6 +128,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <TeamRouteWrapper component={CreateGamePage} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/games/:gameId/edit"
+            element={
+              <ProtectedRoute>
+                <GameRouteWrapper component={EditGamePage} />
               </ProtectedRoute>
             }
           />

@@ -1,12 +1,10 @@
 import { FormEvent, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const { signInWithMagicLink, loading, error } = useAuth()
-  const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

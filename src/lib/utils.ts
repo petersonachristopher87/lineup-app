@@ -1,13 +1,13 @@
 export function formatDate(dateString: string) {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    meridiem: 'short',
-  })
+    hour12: true,
+  }).format(date)
 }
 
 export function formatDateShort(dateString: string) {

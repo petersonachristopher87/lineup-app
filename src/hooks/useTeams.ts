@@ -1,8 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teamService } from '@/lib/supabase/teamService'
-import type { Database } from '@/types/supabase'
-
-type Team = Database['public']['Tables']['teams']['Row']
 
 export function useUserTeams() {
   return useQuery({
@@ -38,6 +35,33 @@ export function useCreateTeam() {
   })
 }
 
+export function useDeleteTeam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (teamId: string) => teamService.deleteTeam(teamId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+    },
+  })
+}
+
+export function useUpdateTeam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      teamId,
+      updates,
+    }: {
+      teamId: string
+      updates: Parameters<typeof teamService.updateTeam>[1]
+    }) => teamService.updateTeam(teamId, updates),
+    onSuccess: (_, { teamId }) => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+      queryClient.invalidateQueries({ queryKey: ['team', teamId] })
+    },
+  })
+}
+
 export function useUpdateTeamSettings() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -57,7 +81,7 @@ export function useUpdateTeamSettings() {
 export function useTeamMembers(teamId: string | undefined) {
   return useQuery({
     queryKey: ['teamMembers', teamId],
-    queryFn: () => (teamId ? teamService.getTeamMembers(teamId) : null),
+    queryFn: () => (teamId ? teamService.getTeamMembers(teamId) : []),
     enabled: !!teamId,
   })
 }

@@ -1,11 +1,72 @@
-import { useUserTeams } from '@/hooks/useTeams'
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useUserTeams, useDeleteTeam } from '@/hooks/useTeams'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { FirstTimeGuide } from '@/components/FirstTimeGuide'
+import { teamInvitationService } from '@/lib/supabase/teamInvitationService'
+
+const GUIDE_DISMISSED_KEY = 'lineup-app:guide-dismissed'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
   const { data: teams = [], isLoading } = useUserTeams()
+  const deleteTeam = useDeleteTeam()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  // Auto-claim any pending coach invitations addressed to this user's email.
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const pending = await teamInvitationService.listPendingForMe()
+        if (cancelled || pending.length === 0) return
+        for (const inv of pending) {
+          await teamInvitationService.claim(inv.id)
+        }
+        queryClient.invalidateQueries({ queryKey: ['teams'] })
+      } catch (err) {
+        console.error('Failed to claim coach invitations:', err)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, queryClient])
+
+  const [showGuide, setShowGuide] = useState(false)
+  // Auto-open the guide once for first-time users (no teams + never dismissed).
+  useEffect(() => {
+    if (isLoading) return
+    if (typeof window === 'undefined') return
+    const dismissed = window.localStorage.getItem(GUIDE_DISMISSED_KEY) === '1'
+    if (!dismissed && teams.length === 0) {
+      setShowGuide(true)
+    }
+  }, [isLoading, teams.length])
+
+  const closeGuide = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(GUIDE_DISMISSED_KEY, '1')
+    }
+    setShowGuide(false)
+  }
+
+  const handleDeleteTeam = (teamId: string, teamName: string) => {
+    const confirmed = window.confirm(
+      `Delete "${teamName}"? This will also delete all players, games, lineups, and attendance for this team. This cannot be undone.`
+    )
+    if (confirmed) {
+      deleteTeam.mutate(teamId, {
+        onError: (err) => {
+          console.error('Delete failed:', err)
+          window.alert(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)
+        },
+      })
+    }
+  }
 
   const handleLogout = async () => {
     await signOut()
@@ -27,8 +88,15 @@ export function DashboardPage() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">{user?.email}</span>
               <button
+                onClick={() => setShowGuide(true)}
+                title="First-time walkthrough"
+                className="text-blue-700 hover:text-blue-900 text-sm font-semibold"
+              >
+                Guide ?
+              </button>
+              <button
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                className="text-blue-700 hover:text-blue-900 text-sm font-semibold"
               >
                 Logout
               </button>
@@ -40,12 +108,20 @@ export function DashboardPage() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-900">Your Teams</h2>
-          <button
-            onClick={() => navigate('/create-team')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Create Team
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/templates')}
+              className="bg-white hover:bg-gray-100 text-gray-900 font-semibold py-2 px-4 rounded border border-gray-400"
+            >
+              Manage Templates
+            </button>
+            <button
+              onClick={() => navigate('/create-team')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Create Team
+            </button>
+          </div>
         </div>
 
         {teams.length === 0 ? (
@@ -63,10 +139,28 @@ export function DashboardPage() {
             {teams.map((team) => (
               <div
                 key={team.id}
-                className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                className="relative bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => navigate(`/team/${team.id}`)}
               >
-                <h3 className="text-lg font-bold text-gray-900">{team.name}</h3>
+                {(team as any).logo_url && (
+                  <img
+                    src={(team as any).logo_url}
+                    alt={`${team.name} logo`}
+                    className="w-12 h-12 rounded object-cover float-right ml-2"
+                  />
+                )}
+                <button
+                  aria-label={`Delete ${team.name}`}
+                  disabled={deleteTeam.isPending}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteTeam(team.id, team.name)
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <span className="text-lg leading-none">×</span>
+                </button>
+                <h3 className="text-lg font-bold text-gray-900 pr-6">{team.name}</h3>
                 <p className="text-sm text-gray-600 mt-2">
                   {team.sport.charAt(0).toUpperCase() + team.sport.slice(1)} - {team.level.toUpperCase()}
                 </p>
@@ -75,16 +169,18 @@ export function DashboardPage() {
                   className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
                   onClick={(e) => {
                     e.stopPropagation()
-                    navigate(`/team/${team.id}/roster`)
+                    navigate(`/team/${team.id}`)
                   }}
                 >
-                  Manage Roster
+                  Manage Team
                 </button>
               </div>
             ))}
           </div>
         )}
       </main>
+
+      <FirstTimeGuide open={showGuide} onClose={closeGuide} />
     </div>
   )
 }

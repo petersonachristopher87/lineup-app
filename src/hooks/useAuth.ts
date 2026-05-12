@@ -19,7 +19,7 @@ export function useAuth() {
       }
     })()
 
-    const subscription = authService.onAuthStateChange((event, session) => {
+    const subscription = authService.onAuthStateChange((_event, session) => {
       setUser(session?.user || null)
     })
 

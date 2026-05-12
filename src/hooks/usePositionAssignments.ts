@@ -9,6 +9,15 @@ export function useGamePositionAssignments(gameId: string | undefined) {
   })
 }
 
+export function useTeamCompletedAssignments(teamId: string | undefined) {
+  return useQuery({
+    queryKey: ['completedAssignments', teamId],
+    queryFn: () =>
+      teamId ? positionAssignmentService.getTeamCompletedAssignments(teamId) : [],
+    enabled: !!teamId,
+  })
+}
+
 export function useSetPositionAssignment() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -39,11 +48,66 @@ export function useDeletePositionAssignment() {
   })
 }
 
+export function useBulkSetPositionAssignments() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      gameId,
+      assignments,
+    }: {
+      gameId: string
+      assignments: Array<{ inning: number; player_id: string; position: string }>
+    }) => positionAssignmentService.bulkSetPositionAssignments(gameId, assignments),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ['positionAssignments', gameId] })
+    },
+  })
+}
+
 export function useClearInningAssignments() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ gameId, inning }: { gameId: string; inning: number }) =>
       positionAssignmentService.clearInningAssignments(gameId, inning),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ['positionAssignments', gameId] })
+    },
+  })
+}
+
+export function useClearPlayerInningAssignment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      gameId,
+      inning,
+      playerId,
+    }: {
+      gameId: string
+      inning: number
+      playerId: string
+    }) => positionAssignmentService.clearPlayerInningAssignment(gameId, inning, playerId),
+    onSuccess: (_, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ['positionAssignments', gameId] })
+    },
+  })
+}
+
+export function useClearGameAssignments() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (gameId: string) => positionAssignmentService.clearGameAssignments(gameId),
+    onSuccess: (_, gameId) => {
+      queryClient.invalidateQueries({ queryKey: ['positionAssignments', gameId] })
+    },
+  })
+}
+
+export function useReorderInnings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ gameId, oldOrder }: { gameId: string; oldOrder: number[] }) =>
+      positionAssignmentService.reorderInnings(gameId, oldOrder),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ['positionAssignments', gameId] })
     },
