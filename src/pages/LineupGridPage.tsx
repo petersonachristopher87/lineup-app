@@ -615,10 +615,10 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
                         draggedId === id ? 'opacity-40' : ''
                       }`}
                     >
-                      <span className="text-gray-500 font-mono w-4 text-right flex-shrink-0">
+                      <span className="text-gray-500 font-mono w-5 text-left flex-shrink-0">
                         {idx + 1}.
                       </span>
-                      <span className="font-medium text-gray-900 truncate flex-1">
+                      <span className="font-medium text-gray-900 truncate flex-1 text-left">
                         {player.first_name} {player.last_name}
                       </span>
                       {player.preferred_positions && player.preferred_positions.length > 0 && (

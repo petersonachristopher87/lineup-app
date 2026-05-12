@@ -162,8 +162,8 @@ function CategoryRow({
     `text-center font-mono ${n > 0 ? base : 'text-gray-400'}`
   return (
     <>
-      <span className="text-gray-900 font-medium flex items-baseline gap-1 min-w-0">
-        <span className="truncate">{name}</span>
+      <span className="text-gray-900 font-medium flex items-baseline gap-1 min-w-0 text-left">
+        <span className="truncate text-left">{name}</span>
         {warnings.map((w, idx) => (
           <span
             key={`${w.type}-${idx}`}

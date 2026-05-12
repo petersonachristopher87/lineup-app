@@ -55,7 +55,7 @@ export function SafetyPanel({
                         className="contents"
                       >
                         <span
-                          className="text-gray-900 font-medium truncate"
+                          className="text-gray-900 font-medium truncate text-left"
                           title={b.message}
                         >
                           🚫 {b.message.split(' threw')[0] || 'Pitcher'}
@@ -77,7 +77,7 @@ export function SafetyPanel({
                   <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-0.5 items-baseline text-[11px]">
                     {eligibleToPitch.map((e) => (
                       <div key={e.playerId} className="contents">
-                        <span className="text-gray-900 font-medium truncate">
+                        <span className="text-gray-900 font-medium truncate text-left">
                           {e.playerName}
                         </span>
                         <span className="text-gray-700 font-mono text-[10px] whitespace-nowrap">
