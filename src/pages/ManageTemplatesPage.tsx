@@ -182,6 +182,13 @@ export function ManageTemplatesPage() {
             onChange={(next) =>
               setDraft({ ...draft, positionCategories: next })
             }
+            onAutosave={(next) => {
+              const nextDraft = { ...draft, positionCategories: next }
+              setTemplateOverride(activeLevel, nextDraft)
+              setIsOverridden(true)
+              setSavedFlash(true)
+              setTimeout(() => setSavedFlash(false), 2000)
+            }}
           />
         </section>
 

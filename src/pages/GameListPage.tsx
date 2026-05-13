@@ -1,10 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
-import { useTeamGames, useUpdateGame } from '@/hooks/useGames'
-import { positionAssignmentService } from '@/lib/supabase/positionAssignmentService'
-import { pitchLogService } from '@/lib/supabase/pitchLogService'
-import { playerService } from '@/lib/supabase/playerService'
+import { useTeamGames } from '@/hooks/useGames'
 import { formatDate } from '@/lib/utils'
+import { MarkCompleteDialog } from '@/components/MarkCompleteDialog'
 
 interface GameListPageProps {
   teamId: string

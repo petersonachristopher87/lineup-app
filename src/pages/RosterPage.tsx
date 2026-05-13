@@ -172,7 +172,7 @@ export function RosterPage({ teamId }: RosterPageProps) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Preferred Positions
+                  Position Preferences
                 </label>
                 <div className="flex gap-3 text-xs font-semibold">
                   <button
@@ -453,7 +453,7 @@ function PlayerEditRow({ player, onSave, onCancel, isSaving }: PlayerEditRowProp
       </div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-semibold text-gray-700">
-          Preferred Positions
+          Position Preferences
         </span>
         <div className="flex gap-3 text-xs font-semibold">
           <button

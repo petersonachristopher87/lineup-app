@@ -41,11 +41,23 @@ const POSITION_LABELS: Record<string, string> = {
 interface Props {
   value: PositionCategories
   onChange: (next: PositionCategories) => void
+  /**
+   * Called after every position change (toggle / add / delete) so the parent
+   * can persist immediately without waiting for a Save button.
+   */
+  onAutosave?: (next: PositionCategories) => void
 }
 
-export function PositionCategoryEditor({ value, onChange }: Props) {
+export function PositionCategoryEditor({ value, onChange, onAutosave }: Props) {
   const [newPos, setNewPos] = useState('')
   const [newPosCategory, setNewPosCategory] = useState<Category>('bench')
+
+  const apply = (next: PositionCategories) => {
+    onChange(next)
+    onAutosave?.(next)
+  }
+
+  const isCustom = (pos: string) => !(pos in NATURAL_CATEGORY)
 
   // Build the master list of positions to render: every known abbreviation
   // plus any positions already saved on the team that aren't in our master list.
@@ -93,7 +105,25 @@ export function PositionCategoryEditor({ value, onChange }: Props) {
     if (enabled) {
       next[category] = [...next[category], pos]
     }
-    onChange(next)
+    apply(next)
+  }
+
+  const deletePosition = (pos: string) => {
+    if (!isCustom(pos)) return
+    if (
+      !window.confirm(
+        `Remove "${pos}" entirely? Historical lineups still reference it but the column disappears from this team's grid.`
+      )
+    ) {
+      return
+    }
+    const next: PositionCategories = {
+      battery: value.battery.filter((p) => p !== pos),
+      infield: value.infield.filter((p) => p !== pos),
+      outfield: value.outfield.filter((p) => p !== pos),
+      bench: value.bench.filter((p) => p !== pos),
+    }
+    apply(next)
   }
 
   const addCustomPosition = () => {
@@ -139,20 +169,33 @@ export function PositionCategoryEditor({ value, onChange }: Props) {
                         <span className="font-mono font-bold text-gray-900">
                           {pos}
                         </span>
-                        <select
-                          value={on ? 'yes' : 'no'}
-                          onChange={(e) =>
-                            setEnabled(pos, cat, e.target.value === 'yes')
-                          }
-                          className={`px-1.5 py-0.5 text-xs font-semibold border rounded text-gray-900 bg-white ${
-                            on
-                              ? 'border-green-500'
-                              : 'border-gray-300 text-gray-600'
-                          }`}
-                        >
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                        </select>
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={on ? 'yes' : 'no'}
+                            onChange={(e) =>
+                              setEnabled(pos, cat, e.target.value === 'yes')
+                            }
+                            className={`px-1.5 py-0.5 text-xs font-semibold border rounded text-gray-900 bg-white ${
+                              on
+                                ? 'border-green-500'
+                                : 'border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                          {isCustom(pos) && (
+                            <button
+                              type="button"
+                              onClick={() => deletePosition(pos)}
+                              aria-label={`Delete custom position ${pos}`}
+                              title="Delete this custom position"
+                              className="w-5 h-5 inline-flex items-center justify-center rounded text-gray-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <span className="text-sm leading-none">×</span>
+                            </button>
+                          )}
+                        </div>
                       </li>
                     )
                   })

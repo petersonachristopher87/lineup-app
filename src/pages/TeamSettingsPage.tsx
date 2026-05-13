@@ -254,6 +254,12 @@ export function TeamSettingsPage({ teamId }: TeamSettingsPageProps) {
             onChange={(next) =>
               setDraft({ ...draft, position_categories: next })
             }
+            onAutosave={(next) =>
+              updateSettings.mutate({
+                teamId,
+                updates: { position_categories: next },
+              })
+            }
           />
         </section>
 
