@@ -12,6 +12,7 @@ import { LineupGridPage } from '@/pages/LineupGridPage'
 import { TeamDetailPage } from '@/pages/TeamDetailPage'
 import { TeamSettingsPage } from '@/pages/TeamSettingsPage'
 import { TeamProfilePage } from '@/pages/TeamProfilePage'
+import { TeamCoachesPage } from '@/pages/TeamCoachesPage'
 import { ManageTemplatesPage } from '@/pages/ManageTemplatesPage'
 import { TeamSeasonStatsPage } from '@/pages/TeamSeasonStatsPage'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -88,6 +89,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <TeamRouteWrapper component={TeamProfilePage} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/coaches"
+            element={
+              <ProtectedRoute>
+                <TeamRouteWrapper component={TeamCoachesPage} />
               </ProtectedRoute>
             }
           />
