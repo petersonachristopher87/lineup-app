@@ -48,12 +48,14 @@ export function ManageTemplatesPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <button
-        onClick={() => navigate('/')}
-        className="inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-semibold mb-4"
-      >
-        🏠 Home
-      </button>
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-semibold"
+        >
+          🏠 Home
+        </button>
+      </div>
 
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Level Templates</h1>
       <p className="text-sm text-gray-700 mb-6">

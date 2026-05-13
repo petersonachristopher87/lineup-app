@@ -139,16 +139,9 @@ export function DashboardPage() {
             {teams.map((team) => (
               <div
                 key={team.id}
-                className="relative bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                className="relative bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow text-center"
                 onClick={() => navigate(`/team/${team.id}`)}
               >
-                {(team as any).logo_url && (
-                  <img
-                    src={(team as any).logo_url}
-                    alt={`${team.name} logo`}
-                    className="w-12 h-12 rounded object-cover float-right ml-2"
-                  />
-                )}
                 <button
                   aria-label={`Delete ${team.name}`}
                   disabled={deleteTeam.isPending}
@@ -160,7 +153,14 @@ export function DashboardPage() {
                 >
                   <span className="text-lg leading-none">×</span>
                 </button>
-                <h3 className="text-lg font-bold text-gray-900 pr-6">{team.name}</h3>
+                {(team as any).logo_url && (
+                  <img
+                    src={(team as any).logo_url}
+                    alt={`${team.name} logo`}
+                    className="w-12 h-12 rounded object-cover mx-auto mb-2"
+                  />
+                )}
+                <h3 className="text-lg font-bold text-gray-900">{team.name}</h3>
                 <p className="text-sm text-gray-600 mt-2">
                   {team.sport.charAt(0).toUpperCase() + team.sport.slice(1)} - {team.level.toUpperCase()}
                 </p>

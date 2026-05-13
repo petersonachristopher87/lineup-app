@@ -56,12 +56,14 @@ export function CreateTeamPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
-        <button
-          onClick={() => navigate('/')}
-          className="inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-semibold mb-4"
-        >
-          🏠 Home
-        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-semibold"
+          >
+            🏠 Home
+          </button>
+        </div>
         <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Your Team</h1>
 

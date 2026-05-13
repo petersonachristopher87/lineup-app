@@ -55,6 +55,18 @@ export const gameService = {
       .single()
 
     if (error) throw error
+
+    // Pitch logs snapshot the game date into their own `pitched_at` column at
+    // mark-complete time. Cascade date edits so rest-day math stays accurate.
+    if (updates.game_date) {
+      const pitchedAt = new Date(updates.game_date).toISOString().slice(0, 10)
+      const { error: cascadeError } = await supabase
+        .from('pitch_log')
+        .update({ pitched_at: pitchedAt })
+        .eq('game_id', gameId)
+      if (cascadeError) throw cascadeError
+    }
+
     return data as Game
   },
 
