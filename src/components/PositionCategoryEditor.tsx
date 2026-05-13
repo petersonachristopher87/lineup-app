@@ -57,8 +57,6 @@ export function PositionCategoryEditor({ value, onChange, onAutosave }: Props) {
     onAutosave?.(next)
   }
 
-  const isCustom = (pos: string) => !(pos in NATURAL_CATEGORY)
-
   // Build the master list of positions to render: every known abbreviation
   // plus any positions already saved on the team that aren't in our master list.
   const positionsBySection = useMemo(() => {
@@ -109,7 +107,6 @@ export function PositionCategoryEditor({ value, onChange, onAutosave }: Props) {
   }
 
   const deletePosition = (pos: string) => {
-    if (!isCustom(pos)) return
     if (
       !window.confirm(
         `Remove "${pos}" entirely? Historical lineups still reference it but the column disappears from this team's grid.`
@@ -184,17 +181,15 @@ export function PositionCategoryEditor({ value, onChange, onAutosave }: Props) {
                             <option value="yes">Yes</option>
                             <option value="no">No</option>
                           </select>
-                          {isCustom(pos) && (
-                            <button
-                              type="button"
-                              onClick={() => deletePosition(pos)}
-                              aria-label={`Delete custom position ${pos}`}
-                              title="Delete this custom position"
-                              className="w-5 h-5 inline-flex items-center justify-center rounded text-gray-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <span className="text-sm leading-none">×</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => deletePosition(pos)}
+                            aria-label={`Delete position ${pos}`}
+                            title="Remove this position"
+                            className="w-5 h-5 inline-flex items-center justify-center rounded text-gray-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <span className="text-sm leading-none">×</span>
+                          </button>
                         </div>
                       </li>
                     )

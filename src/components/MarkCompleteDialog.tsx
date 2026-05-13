@@ -11,7 +11,9 @@ interface Props {
     id: string
     opponent_name: string
     innings_count: number
+    innings_played?: number | null
     game_date: string
+    status?: string
   }
   teamId: string
   onClose: () => void
@@ -25,8 +27,11 @@ interface PitcherCandidate {
 export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
   const queryClient = useQueryClient()
   const updateGame = useUpdateGame()
+  const isEditing = game.status === 'complete'
 
-  const [innings, setInnings] = useState<number>(game.innings_count ?? 6)
+  const [innings, setInnings] = useState<number>(
+    game.innings_played ?? game.innings_count ?? 6
+  )
   const [assignments, setAssignments] = useState<
     Array<{ inning: number; position: string; player_id: string }>
   >([])
@@ -37,27 +42,34 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Reset state every time the dialog opens; also load assignments + roster.
+  // Reset state every time the dialog opens; also load assignments + roster +
+  // any existing pitch log entries (for the edit-completion flow).
   useEffect(() => {
     if (!open) return
-    setInnings(game.innings_count ?? 6)
+    setInnings(game.innings_played ?? game.innings_count ?? 6)
     setPitchCounts({})
     setLoading(true)
     ;(async () => {
       try {
-        const [a, p] = await Promise.all([
+        const [a, p, log] = await Promise.all([
           positionAssignmentService.getGamePositionAssignments(game.id),
           playerService.getTeamPlayers(teamId),
+          pitchLogService.getForGame(game.id),
         ])
         setAssignments(a as any)
         setPlayers(p as any)
+        const prefilled: Record<string, string> = {}
+        for (const entry of log) {
+          prefilled[entry.player_id] = String(entry.pitch_count)
+        }
+        setPitchCounts(prefilled)
       } catch (err) {
         console.error('Failed to load pitcher data', err)
       } finally {
         setLoading(false)
       }
     })()
-  }, [open, game.id, game.innings_count, teamId])
+  }, [open, game.id, game.innings_count, game.innings_played, teamId])
 
   // Pitchers in the played innings — recomputes as the user adjusts innings.
   const pitchers = useMemo<PitcherCandidate[]>(() => {
@@ -93,7 +105,9 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
       })
 
       // Build pitch_log entries from any filled-in counts.
-      const pitchedAt = new Date(game.game_date).toISOString().slice(0, 10)
+      // Take the calendar date as-is to avoid timezone drift between the
+      // local datetime the user picked and the stored `pitched_at` (date col).
+      const pitchedAt = String(game.game_date).slice(0, 10)
       const entries: Array<{
         game_id: string
         player_id: string
@@ -112,14 +126,17 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
           pitched_at: pitchedAt,
         })
       }
+      // The form is the source of truth: wipe any prior rows for this game and
+      // re-insert. Keeps editing simple (clear a field → row goes away).
+      await pitchLogService.deleteForGame(game.id)
       if (entries.length > 0) {
         await pitchLogService.insertPitchLog(entries)
-        queryClient.invalidateQueries({ queryKey: ['pitchLog', teamId] })
       }
+      queryClient.invalidateQueries({ queryKey: ['pitchLog', teamId] })
       onClose()
     } catch (err) {
       window.alert(
-        `Failed to mark complete: ${err instanceof Error ? err.message : String(err)}`
+        `Failed to save: ${err instanceof Error ? err.message : String(err)}`
       )
     } finally {
       setIsSaving(false)
@@ -137,11 +154,12 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
       >
         <div className="px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">
-            Mark complete: {game.opponent_name}
+            {isEditing ? 'Edit completion' : 'Mark complete'}: {game.opponent_name}
           </h2>
           <p className="text-xs text-gray-600 mt-0.5">
-            Capture innings played and per-pitcher pitch counts for season stats
-            and rest-day rules.
+            {isEditing
+              ? 'Update innings played or per-pitcher pitch counts. Changes apply to season stats and rest-day rules.'
+              : 'Capture innings played and per-pitcher pitch counts for season stats and rest-day rules.'}
           </p>
         </div>
 
@@ -221,7 +239,7 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
             disabled={isSaving}
             className="px-3 py-1.5 text-sm font-bold text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {isSaving ? 'Saving…' : 'Mark complete'}
+            {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Mark complete'}
           </button>
         </div>
       </div>

@@ -111,6 +111,7 @@ function GameCard({ game, teamId }: GameCardProps) {
   const navigate = useNavigate()
   const [showCompleteDialog, setShowCompleteDialog] = useState(false)
   const isOpen = game.status !== 'complete' && game.status !== 'cancelled'
+  const isComplete = game.status === 'complete'
 
   const statusColors = {
     planned: 'bg-blue-100 text-blue-800',
@@ -211,6 +212,14 @@ function GameCard({ game, teamId }: GameCardProps) {
             ✓ Mark complete
           </button>
         )}
+        {isComplete && (
+          <button
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-1 px-2 rounded text-xs border border-gray-400"
+            onClick={handleMarkComplete}
+          >
+            Edit innings & pitches
+          </button>
+        )}
       </div>
       <MarkCompleteDialog
         open={showCompleteDialog}
@@ -218,7 +227,9 @@ function GameCard({ game, teamId }: GameCardProps) {
           id: game.id,
           opponent_name: game.opponent_name,
           innings_count: game.innings_count ?? 6,
+          innings_played: game.innings_played,
           game_date: game.game_date,
+          status: game.status,
         }}
         teamId={teamId}
         onClose={() => setShowCompleteDialog(false)}

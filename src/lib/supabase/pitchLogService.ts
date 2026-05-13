@@ -28,4 +28,23 @@ export const pitchLogService = {
     if (error) throw error
     return (data ?? []) as unknown as PitchLogRow[]
   },
+
+  async getForGame(gameId: string): Promise<PitchLogRow[]> {
+    const { data, error } = await supabase
+      .from('pitch_log')
+      .select('*')
+      .eq('game_id', gameId)
+
+    if (error) throw error
+    return (data ?? []) as PitchLogRow[]
+  },
+
+  async deleteForGame(gameId: string) {
+    const { error } = await supabase
+      .from('pitch_log')
+      .delete()
+      .eq('game_id', gameId)
+
+    if (error) throw error
+  },
 }

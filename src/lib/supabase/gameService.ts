@@ -58,12 +58,16 @@ export const gameService = {
 
     // Pitch logs snapshot the game date into their own `pitched_at` column at
     // mark-complete time. Cascade date edits so rest-day math stays accurate.
+    // Slice the first 10 chars directly (YYYY-MM-DD) so we don't roundtrip
+    // through Date()/toISOString() — that introduces a timezone shift when
+    // the input is a naive local datetime like "2026-05-12T19:00:00".
     if (updates.game_date) {
-      const pitchedAt = new Date(updates.game_date).toISOString().slice(0, 10)
+      const pitchedAt = String(updates.game_date).slice(0, 10)
       const { error: cascadeError } = await supabase
         .from('pitch_log')
         .update({ pitched_at: pitchedAt })
         .eq('game_id', gameId)
+        .select('id')
       if (cascadeError) throw cascadeError
     }
 
