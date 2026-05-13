@@ -46,26 +46,34 @@ export function SafetyPanel({
               {blocks.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700 mb-1">
-                    Blocked
+                    Blocked — rest required
                   </p>
-                  <div className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 items-baseline text-[11px]">
+                  <ul className="space-y-1">
                     {blocks.map((b) => (
-                      <div
+                      <li
                         key={`${b.playerId}-${b.reason}`}
-                        className="contents"
+                        className="text-[11px] leading-snug text-left bg-red-50 border border-red-200 rounded px-1.5 py-1"
+                        title={b.message}
                       >
-                        <span
-                          className="text-gray-900 font-medium truncate text-left"
-                          title={b.message}
-                        >
-                          🚫 {b.message.split(' threw')[0] || 'Pitcher'}
+                        <span className="mr-1">🚫</span>
+                        <span className="font-semibold text-gray-900">
+                          {b.playerName}
                         </span>
-                        <span className="text-red-700 text-[10px] whitespace-nowrap">
-                          rest
-                        </span>
-                      </div>
+                        {b.pitchCount != null && b.daysAgo != null && (
+                          <span className="text-red-900">
+                            {' '}
+                            — pitched {b.pitchCount} pitches {b.daysAgo}d ago
+                          </span>
+                        )}
+                        {b.daysRemaining != null && b.daysRemaining > 0 && (
+                          <span className="text-red-700">
+                            , needs {b.daysRemaining} more rest day
+                            {b.daysRemaining === 1 ? '' : 's'}
+                          </span>
+                        )}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
 

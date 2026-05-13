@@ -23,8 +23,12 @@ export interface PitchLogEntry {
 
 export interface SafetyBlock {
   playerId: string
+  playerName: string
   reason: 'rest_required'
   message: string
+  pitchCount?: number
+  daysAgo?: number
+  daysRemaining?: number
   // When the block lifts
   eligibleOn?: string
 }
@@ -167,11 +171,16 @@ export function calculatePitchingBlocks(
       const eligibleDate = new Date(lastPitchDate.getTime() + restNeeded * MS_PER_DAY)
       const eligibleIso = eligibleDate.toISOString().slice(0, 10)
       const name = playerNames[playerId] ?? 'Player'
+      const remaining = restNeeded - daysSince
       blocks.push({
         playerId,
+        playerName: name,
         reason: 'rest_required',
+        pitchCount: outing.pitch_count,
+        daysAgo: daysSince,
+        daysRemaining: remaining,
         eligibleOn: eligibleIso,
-        message: `${name} threw ${outing.pitch_count} pitches ${daysSince}d ago — needs ${restNeeded - daysSince} more rest day${restNeeded - daysSince === 1 ? '' : 's'} (eligible ${eligibleIso})`,
+        message: `${name} threw ${outing.pitch_count} pitches ${daysSince}d ago — needs ${remaining} more rest day${remaining === 1 ? '' : 's'} (eligible ${eligibleIso})`,
       })
     }
   }

@@ -570,6 +570,14 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
             </div>
           </div>
           {showBatting && (<>
+          {battingOrder.length > 0 && (
+            <div className="flex items-baseline gap-1.5 px-1.5 mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+              <span className="w-5 text-left flex-shrink-0">#</span>
+              <span className="flex-1 text-left">Player</span>
+              <span>Prefers</span>
+              <span className="w-3.5 flex-shrink-0" />
+            </div>
+          )}
           <div onDrop={handleDrop} onDragLeave={() => setDropIndex(null)}>
           {battingOrder.length === 0 ? (
             <div
