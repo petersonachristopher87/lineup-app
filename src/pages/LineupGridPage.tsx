@@ -24,6 +24,7 @@ import { SafetyPanel } from '@/components/safety/SafetyPanel'
 import type { SafetyRules } from '@/lib/safetyRulesEngine'
 import { autoFillBattingOrder, autoFillPositions } from '@/lib/autoFillEngine'
 import { PrintableLineup } from '@/components/PrintableLineup'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatDate } from '@/lib/utils'
 
 interface LineupGridPageProps {
@@ -184,18 +185,9 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
     }
   }
 
-  const handlePrefill = () => {
-    if (attendingPlayers.length === 0) {
-      window.alert('Mark some players as attending first.')
-      return
-    }
-    if (positionAssignments.length > 0 || (lineup?.batting_order?.length ?? 0) > 0) {
-      const ok = window.confirm(
-        'Prefill will overwrite the current batting order and position assignments. Continue?'
-      )
-      if (!ok) return
-    }
+  const [prefillConfirmOpen, setPrefillConfirmOpen] = useState(false)
 
+  const runPrefill = () => {
     const order = autoFillBattingOrder(attendingPlayers)
     setBattingOrder(order)
     setOrderDirty(true)
@@ -226,6 +218,18 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
         }
       )
     }
+  }
+
+  const handlePrefill = () => {
+    if (attendingPlayers.length === 0) {
+      window.alert('Mark some players as attending first.')
+      return
+    }
+    if (positionAssignments.length > 0 || (lineup?.batting_order?.length ?? 0) > 0) {
+      setPrefillConfirmOpen(true)
+      return
+    }
+    runPrefill()
   }
 
   const handleSetPosition = (inning: number, playerId: string, position: string) => {
@@ -898,6 +902,17 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={prefillConfirmOpen}
+        title="Prefill batting & positions?"
+        message="This will overwrite the current batting order and position assignments. Continue?"
+        confirmLabel="Prefill"
+        onCancel={() => setPrefillConfirmOpen(false)}
+        onConfirm={() => {
+          setPrefillConfirmOpen(false)
+          runPrefill()
+        }}
+      />
     </div>
   )
 }
