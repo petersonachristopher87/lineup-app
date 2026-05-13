@@ -104,9 +104,9 @@ export function MarkCompleteDialog({ open, game, teamId, onClose }: Props) {
         updates: { status: 'complete', innings_played: innings },
       })
 
-      // Build pitch_log entries from any filled-in counts.
-      // Take the calendar date as-is to avoid timezone drift between the
-      // local datetime the user picked and the stored `pitched_at` (date col).
+      // Always stamp pitch_log entries with the calendar date of the game
+      // itself — never "today" / mark-complete time. Take slice(0,10) directly
+      // to avoid timezone shifts from new Date()/toISOString().
       const pitchedAt = String(game.game_date).slice(0, 10)
       const entries: Array<{
         game_id: string

@@ -24,6 +24,7 @@ import { SafetyPanel } from '@/components/safety/SafetyPanel'
 import type { SafetyRules } from '@/lib/safetyRulesEngine'
 import { autoFillBattingOrder, autoFillPositions } from '@/lib/autoFillEngine'
 import { PrintableLineup } from '@/components/PrintableLineup'
+import { formatDate } from '@/lib/utils'
 
 interface LineupGridPageProps {
   gameId: string
@@ -479,9 +480,15 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
             ← Games
           </button>
         </div>
-        <h1 className="text-xl font-bold text-gray-900 flex-1">
-          {game.opponent_name}
-        </h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold text-gray-900 truncate">
+            vs {game.opponent_name}
+            <span className="ml-2 text-sm font-normal text-gray-700">
+              · {formatDate(game.game_date)}
+              {game.location && <> · {game.location}</>}
+            </span>
+          </h1>
+        </div>
         <div className="flex items-center gap-3">
           <p className="text-xs text-gray-700">
             {attendingPlayers.length} attending · {game.innings_count} innings
