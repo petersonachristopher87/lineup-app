@@ -21,6 +21,10 @@ export function useTeamSettings(teamId: string | undefined) {
     queryKey: ['teamSettings', teamId],
     queryFn: () => (teamId ? teamService.getTeamSettings(teamId) : null),
     enabled: !!teamId,
+    // Settings can change between page navigations (Settings page → Lineup
+    // page), so always refetch on mount instead of using cached data — the
+    // request is cheap and prevents stale position columns.
+    refetchOnMount: 'always',
   })
 }
 
