@@ -109,8 +109,7 @@ interface GameCardProps {
 
 function GameCard({ game, teamId }: GameCardProps) {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const updateGame = useUpdateGame()
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false)
   const isOpen = game.status !== 'complete' && game.status !== 'cancelled'
 
   const statusColors = {
@@ -120,93 +119,9 @@ function GameCard({ game, teamId }: GameCardProps) {
     cancelled: 'bg-red-100 text-red-800',
   }
 
-  const handleMarkComplete = async (e: React.MouseEvent) => {
+  const handleMarkComplete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const planned = game.innings_count ?? 6
-    const input = window.prompt(
-      `How many innings did "${game.opponent_name}" actually play?\n(Game was scheduled for ${planned}.)`,
-      String(planned)
-    )
-    if (input === null) return
-    const innings = parseInt(input, 10)
-    if (!Number.isFinite(innings) || innings < 0) {
-      window.alert('Innings must be a non-negative number.')
-      return
-    }
-
-    try {
-      await updateGame.mutateAsync({
-        gameId: game.id,
-        updates: { status: 'complete', innings_played: innings },
-      })
-    } catch (err) {
-      window.alert(
-        `Failed to mark complete: ${err instanceof Error ? err.message : String(err)}`
-      )
-      return
-    }
-
-    // After marking complete, offer to capture pitch counts so rest-day
-    // safety rules can fire correctly on the next game's lineup.
-    try {
-      const assignments =
-        await positionAssignmentService.getGamePositionAssignments(game.id)
-      const pitcherIds = Array.from(
-        new Set(
-          assignments
-            .filter((a) => a.position === 'P' && a.inning <= innings)
-            .map((a) => a.player_id)
-        )
-      )
-      if (pitcherIds.length === 0) return
-
-      const capture = window.confirm(
-        `Capture pitch counts for ${pitcherIds.length} pitcher${
-          pitcherIds.length === 1 ? '' : 's'
-        }?\nThis informs rest-day rules for the next game.`
-      )
-      if (!capture) return
-
-      const players = await playerService.getTeamPlayers(teamId)
-      const playerMap = new Map(players.map((p) => [p.id, p]))
-
-      const pitchedAt = new Date(game.game_date).toISOString().slice(0, 10)
-      const entries: Array<{
-        game_id: string
-        player_id: string
-        pitch_count: number
-        pitched_at: string
-      }> = []
-      for (const pid of pitcherIds) {
-        const player = playerMap.get(pid)
-        const name = player ? `${player.first_name} ${player.last_name}` : 'Pitcher'
-        const pitchInput = window.prompt(
-          `How many pitches did ${name} throw in ${game.opponent_name}?`,
-          ''
-        )
-        if (pitchInput === null) continue
-        const count = parseInt(pitchInput, 10)
-        if (!Number.isFinite(count) || count < 0) {
-          window.alert(`Skipped ${name} — pitch count must be a non-negative number.`)
-          continue
-        }
-        entries.push({
-          game_id: game.id,
-          player_id: pid,
-          pitch_count: count,
-          pitched_at: pitchedAt,
-        })
-      }
-
-      if (entries.length > 0) {
-        await pitchLogService.insertPitchLog(entries)
-        queryClient.invalidateQueries({ queryKey: ['pitchLog', teamId] })
-      }
-    } catch (err) {
-      window.alert(
-        `Pitch capture failed: ${err instanceof Error ? err.message : String(err)}`
-      )
-    }
+    setShowCompleteDialog(true)
   }
 
   return (
@@ -290,14 +205,24 @@ function GameCard({ game, teamId }: GameCardProps) {
         </div>
         {isOpen && (
           <button
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-1 px-2 rounded text-xs border border-gray-400 disabled:opacity-50"
-            disabled={updateGame.isPending}
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-1 px-2 rounded text-xs border border-gray-400"
             onClick={handleMarkComplete}
           >
-            {updateGame.isPending ? 'Saving…' : '✓ Mark complete'}
+            ✓ Mark complete
           </button>
         )}
       </div>
+      <MarkCompleteDialog
+        open={showCompleteDialog}
+        game={{
+          id: game.id,
+          opponent_name: game.opponent_name,
+          innings_count: game.innings_count ?? 6,
+          game_date: game.game_date,
+        }}
+        teamId={teamId}
+        onClose={() => setShowCompleteDialog(false)}
+      />
     </div>
   )
 }
