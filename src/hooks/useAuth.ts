@@ -52,11 +52,56 @@ export function useAuth() {
     }
   }
 
+  const signInWithPassword = async (email: string, password: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await authService.signInWithPassword(email, password)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const signUpWithPassword = async (email: string, password: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await authService.signUpWithPassword(email, password)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const sendPasswordResetEmail = async (email: string) => {
+    setError(null)
+    await authService.sendPasswordResetEmail(email)
+  }
+
+  const updatePassword = async (newPassword: string) => {
+    await authService.updatePassword(newPassword)
+  }
+
+  const updateEmail = async (newEmail: string) => {
+    await authService.updateEmail(newEmail)
+  }
+
+  const updateDisplayName = async (fullName: string) => {
+    await authService.updateDisplayName(fullName)
+    const { user: refreshed } = await authService.getCurrentUser()
+    setUser(refreshed)
+  }
+
   return {
     user,
     loading,
     error,
     signOut,
     signInWithMagicLink,
+    signInWithPassword,
+    signUpWithPassword,
+    sendPasswordResetEmail,
+    updatePassword,
+    updateEmail,
+    updateDisplayName,
   }
 }
