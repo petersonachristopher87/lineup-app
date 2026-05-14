@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { FormEvent, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'magic'
@@ -14,11 +14,17 @@ export function LoginPage() {
   const [info, setInfo] = useState<string | null>(null)
 
   const {
+    user,
     signInWithPassword,
     signUpWithPassword,
     sendPasswordResetEmail,
     signInWithMagicLink,
   } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true })
+  }, [user, navigate])
 
   const reset = () => {
     setFormError(null)
