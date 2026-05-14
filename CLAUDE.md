@@ -44,13 +44,30 @@ pnpm type-check   # tsc --noEmit
 
 ## Current phase
 
-**Deployment + auth hardening.** The feature set from the original build order is largely implemented (despite what the README checklist suggests). Current focus:
+**Live on Vercel, one-tester prototype.** Production URL: **https://lineup-app-ybzg.vercel.app/**. Deployed automatically on every push to `main`. The app is feature-complete for the original build order and is now in real-use validation with a single tester.
 
-- Deploying to **Vercel** (preferred — [vercel.json](vercel.json) already has the SPA rewrite) or **Netlify** as fallback.
+Current focus:
+
+- Iterating on UX based on tester feedback.
 - Validating **Supabase RLS policies** end-to-end: a coach can only see/mutate their own teams, players, games, lineups, pitch logs; team-invitation flow respects roles.
-- Validating **Supabase Auth** flow: signup, login, password reset, session persistence, redirect after auth.
+- Tightening the auth flow now that it's email + password (primary) with magic-link fallback.
 
-When working in this phase, treat RLS and auth as load-bearing — never bypass RLS with a service role key from the client, and never weaken policies to make a query work. If a query fails because of RLS, the policy is the thing to fix, not the query.
+Treat RLS and auth as load-bearing — never bypass RLS with a service role key from the client, and never weaken policies to make a query work. If a query fails because of RLS, the policy is the thing to fix, not the query.
+
+### Solo-prototype workflow
+
+Christopher works **directly on `main`** during this phase — no feature branches, no PRs, no worktrees. Each commit + push triggers a Vercel deploy. This will change once a second contributor joins or the app launches to real users. Don't create branches by default.
+
+### Auth model
+
+- **Primary**: email + password via Supabase Auth (`signInWithPassword`, `signUp`, `resetPasswordForEmail`).
+- **Fallback**: magic link via `signInWithOtp` — still wired up for users who forget passwords or prefer email-only auth.
+- **Reset-password flow**: email link lands on `/reset-password`, which waits for Supabase's `PASSWORD_RECOVERY` session before letting the user submit a new password.
+- **Supabase URL Configuration** must include both production and local dev `/reset-password` redirects, or the recovery email loops back to Site URL.
+
+### Feedback channel
+
+Profile menu → "Send feedback" opens `mailto:peterson.a.christopher@gmail.com`. That's the single feedback inbox until a form replaces it.
 
 ## Conventions
 
