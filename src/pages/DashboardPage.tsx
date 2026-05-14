@@ -4,12 +4,13 @@ import { useUserTeams, useDeleteTeam } from '@/hooks/useTeams'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { FirstTimeGuide } from '@/components/FirstTimeGuide'
+import { ProfileMenu } from '@/components/ProfileMenu'
 import { teamInvitationService } from '@/lib/supabase/teamInvitationService'
 
 const GUIDE_DISMISSED_KEY = 'lineup-app:guide-dismissed'
 
 export function DashboardPage() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { data: teams = [], isLoading } = useUserTeams()
   const deleteTeam = useDeleteTeam()
   const navigate = useNavigate()
@@ -68,11 +69,6 @@ export function DashboardPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await signOut()
-    navigate('/login')
-  }
-
   if (isLoading) {
     return <div className="text-center py-12">Loading...</div>
   }
@@ -86,7 +82,6 @@ export function DashboardPage() {
               <h1 className="text-2xl font-bold text-gray-900">Lineup Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{user?.email}</span>
               <button
                 onClick={() => setShowGuide(true)}
                 title="First-time walkthrough"
@@ -94,12 +89,7 @@ export function DashboardPage() {
               >
                 Guide ?
               </button>
-              <button
-                onClick={handleLogout}
-                className="text-blue-700 hover:text-blue-900 text-sm font-semibold"
-              >
-                Logout
-              </button>
+              <ProfileMenu />
             </div>
           </div>
         </div>

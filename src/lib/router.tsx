@@ -15,6 +15,9 @@ import { TeamProfilePage } from '@/pages/TeamProfilePage'
 import { TeamCoachesPage } from '@/pages/TeamCoachesPage'
 import { ManageTemplatesPage } from '@/pages/ManageTemplatesPage'
 import { TeamSeasonStatsPage } from '@/pages/TeamSeasonStatsPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { PrivacyPage } from '@/pages/PrivacyPage'
+import { TermsPage } from '@/pages/TermsPage'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 
@@ -52,6 +55,9 @@ export function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route
             path="/"
             element={
