@@ -1,5 +1,8 @@
+import { useEffect, useRef } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { authService } from '@/lib/supabase/authService'
+import { useQueryClient } from '@tanstack/react-query'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { CreateTeamPage } from '@/pages/CreateTeamPage'
@@ -20,6 +23,31 @@ import { PrivacyPage } from '@/pages/PrivacyPage'
 import { TermsPage } from '@/pages/TermsPage'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
+
+/**
+ * Clears the React Query cache whenever the auth user changes (sign-in,
+ * sign-out, switching accounts). Prevents stale per-user data — e.g. the
+ * previous account's team list — from flashing into the new session.
+ */
+function AuthCacheCleaner() {
+  const queryClient = useQueryClient()
+  const lastUserIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const sub = authService.onAuthStateChange((event, session) => {
+      const newUserId = session?.user?.id ?? null
+      if (event === 'SIGNED_OUT' || newUserId !== lastUserIdRef.current) {
+        queryClient.clear()
+        lastUserIdRef.current = newUserId
+      }
+    })
+    return () => {
+      sub?.unsubscribe()
+    }
+  }, [queryClient])
+
+  return null
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -52,6 +80,7 @@ function GameRouteWrapper({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthCacheCleaner />
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
