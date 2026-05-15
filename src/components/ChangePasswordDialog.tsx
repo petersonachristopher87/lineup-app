@@ -10,6 +10,7 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
   const { updatePassword } = useAuth()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
@@ -18,6 +19,7 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
     if (open) {
       setPassword('')
       setConfirm('')
+      setShowPassword(false)
       setError(null)
       setDone(false)
     }
@@ -72,11 +74,20 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
           ) : (
             <>
               <label className="block">
-                <span className="block text-sm font-semibold text-gray-900">
-                  New password
+                <span className="flex items-center justify-between">
+                  <span className="block text-sm font-semibold text-gray-900">
+                    New password
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-xs font-semibold text-blue-700 hover:text-blue-900"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -90,7 +101,7 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
                   Confirm new password
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password"

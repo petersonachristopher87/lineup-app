@@ -81,15 +81,8 @@ export function DashboardPage() {
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">Lineup Manager</h1>
             </div>
-            <div className="flex flex-col items-end justify-center gap-1">
-              <ProfileMenu />
-              <button
-                onClick={() => setShowGuide(true)}
-                title="First-time walkthrough"
-                className="text-blue-700 hover:text-blue-900 text-xs font-semibold leading-none"
-              >
-                Guide ?
-              </button>
+            <div className="flex items-center">
+              <ProfileMenu onShowGuide={() => setShowGuide(true)} />
             </div>
           </div>
         </div>
@@ -132,17 +125,19 @@ export function DashboardPage() {
                 className="relative bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow text-center"
                 onClick={() => navigate(`/team/${team.id}`)}
               >
-                <button
-                  aria-label={`Delete ${team.name}`}
-                  disabled={deleteTeam.isPending}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDeleteTeam(team.id, team.name)
-                  }}
-                  className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
-                >
-                  <span className="text-lg leading-none">×</span>
-                </button>
+                {team.created_by === user?.id && (
+                  <button
+                    aria-label={`Delete ${team.name}`}
+                    disabled={deleteTeam.isPending}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteTeam(team.id, team.name)
+                    }}
+                    className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                )}
                 {(team as any).logo_url && (
                   <img
                     src={(team as any).logo_url}

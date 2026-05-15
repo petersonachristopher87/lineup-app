@@ -14,7 +14,7 @@ const STEPS: Step[] = [
   {
     title: 'Welcome to Lineup Manager',
     body:
-      "This walkthrough takes about a minute. We'll cover the full flow: team → roster → games → attendance → lineup → print. You can reopen it anytime from the ? Guide button on the Dashboard.",
+      "This walkthrough takes about a minute. We'll cover the full flow: team → roster → games → attendance → lineup → print. You can reopen it anytime from the profile menu (top right) → Show guide.",
   },
   {
     title: '1. Create your team',
@@ -49,7 +49,7 @@ const STEPS: Step[] = [
   {
     title: "You're set",
     body:
-      'That covers the whole flow. The ? Guide button on the Dashboard reopens this anytime. Happy coaching.',
+      'That covers the whole flow. Profile menu (top right) → Show guide reopens this anytime. Happy coaching.',
   },
 ]
 

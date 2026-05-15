@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useGameById, useUpdateGame } from '@/hooks/useGames'
+import { useCurrentUserRole } from '@/hooks/useTeams'
 import { useNavigate } from 'react-router-dom'
 
 interface EditGamePageProps {
@@ -9,8 +10,15 @@ interface EditGamePageProps {
 
 export function EditGamePage({ teamId, gameId }: EditGamePageProps) {
   const navigate = useNavigate()
+  const role = useCurrentUserRole(teamId)
   const { data: game } = useGameById(gameId)
   const updateGame = useUpdateGame()
+
+  useEffect(() => {
+    if (role === 'assistant_coach') {
+      navigate(`/team/${teamId}/games`, { replace: true })
+    }
+  }, [role, teamId, navigate])
 
   const [formData, setFormData] = useState({
     opponent_name: '',
@@ -54,6 +62,10 @@ export function EditGamePage({ teamId, gameId }: EditGamePageProps) {
     } catch (error) {
       console.error('Failed to update game:', error)
     }
+  }
+
+  if (role === 'assistant_coach') {
+    return null
   }
 
   if (!game) {

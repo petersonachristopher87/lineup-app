@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTeamGames } from '@/hooks/useGames'
+import { useCanManageTeam } from '@/hooks/useTeams'
 import { formatDate } from '@/lib/utils'
 import { MarkCompleteDialog } from '@/components/MarkCompleteDialog'
 
@@ -11,6 +12,7 @@ interface GameListPageProps {
 export function GameListPage({ teamId }: GameListPageProps) {
   const navigate = useNavigate()
   const { data: games = [], isLoading } = useTeamGames(teamId)
+  const canManageTeam = useCanManageTeam(teamId)
 
   if (isLoading) {
     return <div className="text-center py-12">Loading games...</div>
@@ -51,23 +53,27 @@ export function GameListPage({ teamId }: GameListPageProps) {
       </div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Games</h1>
-        <button
-          onClick={() => navigate(`/team/${teamId}/games/new`)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Create Game
-        </button>
+        {canManageTeam && (
+          <button
+            onClick={() => navigate(`/team/${teamId}/games/new`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Create Game
+          </button>
+        )}
       </div>
 
       {games.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <p className="text-gray-600 mb-4">No games yet.</p>
-          <button
-            onClick={() => navigate(`/team/${teamId}/games/new`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Schedule Your First Game
-          </button>
+          {canManageTeam && (
+            <button
+              onClick={() => navigate(`/team/${teamId}/games/new`)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Schedule Your First Game
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -78,7 +84,7 @@ export function GameListPage({ teamId }: GameListPageProps) {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {upcomingGames.map((game) => (
-                  <GameCard key={game.id} game={game} teamId={teamId} />
+                  <GameCard key={game.id} game={game} teamId={teamId} canManageTeam={canManageTeam} />
                 ))}
               </div>
             </div>
@@ -91,7 +97,7 @@ export function GameListPage({ teamId }: GameListPageProps) {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {pastGames.map((game) => (
-                  <GameCard key={game.id} game={game} teamId={teamId} />
+                  <GameCard key={game.id} game={game} teamId={teamId} canManageTeam={canManageTeam} />
                 ))}
               </div>
             </div>
@@ -105,9 +111,10 @@ export function GameListPage({ teamId }: GameListPageProps) {
 interface GameCardProps {
   game: any
   teamId: string
+  canManageTeam: boolean
 }
 
-function GameCard({ game, teamId }: GameCardProps) {
+function GameCard({ game, teamId, canManageTeam }: GameCardProps) {
   const navigate = useNavigate()
   const [showCompleteDialog, setShowCompleteDialog] = useState(false)
   const isOpen = game.status !== 'complete' && game.status !== 'cancelled'
@@ -131,16 +138,17 @@ function GameCard({ game, teamId }: GameCardProps) {
       onClick={() => navigate(`/team/${teamId}/games/${game.id}/attendance`)}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <button
-          aria-label={`Edit ${game.opponent_name}`}
-          title="Edit game"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/team/${teamId}/games/${game.id}/edit`)
-          }}
-          className="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-blue-700 hover:bg-blue-50 flex-shrink-0"
-        >
-          <svg
+        {canManageTeam ? (
+          <button
+            aria-label={`Edit ${game.opponent_name}`}
+            title="Edit game"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/team/${teamId}/games/${game.id}/edit`)
+            }}
+            className="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-blue-700 hover:bg-blue-50 flex-shrink-0"
+          >
+            <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -159,7 +167,8 @@ function GameCard({ game, teamId }: GameCardProps) {
               d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
             />
           </svg>
-        </button>
+          </button>
+        ) : null}
         <h3 className="text-sm font-bold text-gray-900 truncate flex-1">
           {game.opponent_name}
         </h3>
@@ -204,7 +213,7 @@ function GameCard({ game, teamId }: GameCardProps) {
             Lineup
           </button>
         </div>
-        {isOpen && (
+        {canManageTeam && isOpen && (
           <button
             className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-1 px-2 rounded text-xs border border-gray-400"
             onClick={handleMarkComplete}
@@ -212,7 +221,7 @@ function GameCard({ game, teamId }: GameCardProps) {
             ✓ Mark complete
           </button>
         )}
-        {isComplete && (
+        {canManageTeam && isComplete && (
           <button
             className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-1 px-2 rounded text-xs border border-gray-400"
             onClick={handleMarkComplete}

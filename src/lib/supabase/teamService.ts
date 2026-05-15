@@ -205,6 +205,26 @@ export const teamService = {
     return data
   },
 
+  /**
+   * Every coach on the team with their email + role. Uses a SECURITY DEFINER
+   * RPC (migration 005) so an assistant can see the head coach's email even
+   * without direct SELECT access to auth.users.
+   */
+  async getTeamCoaches(teamId: string) {
+    // RPC defined in migration 005; not in the generated Database type, so
+    // we cast through `any` to call it.
+    const { data, error } = await (supabase as any).rpc('get_team_coaches', {
+      _team_id: teamId,
+    })
+    if (error) throw error
+    return (data ?? []) as Array<{
+      user_id: string
+      email: string
+      role: 'head_coach' | 'assistant_coach'
+      joined_at: string
+    }>
+  },
+
   async addTeamMember(teamId: string, userId: string, role: 'head_coach' | 'assistant_coach') {
     const { data, error } = await supabase
       .from('team_members')

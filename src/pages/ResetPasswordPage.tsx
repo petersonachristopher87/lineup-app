@@ -9,6 +9,7 @@ export function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
@@ -84,11 +85,20 @@ export function ResetPasswordPage() {
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               <label className="block">
-                <span className="block text-sm font-semibold text-gray-900">
-                  New password
+                <span className="flex items-center justify-between">
+                  <span className="block text-sm font-semibold text-gray-900">
+                    New password
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-xs font-semibold text-blue-700 hover:text-blue-900"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -103,7 +113,7 @@ export function ResetPasswordPage() {
                   Confirm new password
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password"

@@ -19,7 +19,11 @@ function initialsFor(user: { email?: string | null; user_metadata?: any } | null
   return email.slice(0, 1).toUpperCase() || '?'
 }
 
-export function ProfileMenu() {
+interface ProfileMenuProps {
+  onShowGuide?: () => void
+}
+
+export function ProfileMenu({ onShowGuide }: ProfileMenuProps = {}) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -97,6 +101,11 @@ export function ProfileMenu() {
             </div>
 
             <div className="py-1 border-t border-gray-200">
+              {onShowGuide && (
+                <MenuItem onClick={openItem(onShowGuide)}>
+                  Show guide
+                </MenuItem>
+              )}
               <MenuItem onClick={openItem(() => navigate('/privacy'))}>
                 Privacy policy
               </MenuItem>

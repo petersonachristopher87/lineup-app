@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTeamById, useUpdateTeam } from '@/hooks/useTeams'
+import { useTeamById, useUpdateTeam, useCurrentUserRole } from '@/hooks/useTeams'
 
 interface TeamProfilePageProps {
   teamId: string
@@ -8,6 +8,7 @@ interface TeamProfilePageProps {
 
 export function TeamProfilePage({ teamId }: TeamProfilePageProps) {
   const navigate = useNavigate()
+  const role = useCurrentUserRole(teamId)
   const { data: team } = useTeamById(teamId)
   const updateTeam = useUpdateTeam()
 
@@ -23,6 +24,12 @@ export function TeamProfilePage({ teamId }: TeamProfilePageProps) {
     }
   }, [team])
 
+  useEffect(() => {
+    if (role === 'assistant_coach') {
+      navigate(`/team/${teamId}`, { replace: true })
+    }
+  }, [role, teamId, navigate])
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -32,6 +39,10 @@ export function TeamProfilePage({ teamId }: TeamProfilePageProps) {
       if (typeof result === 'string') setLogoUrl(result)
     }
     reader.readAsDataURL(file)
+  }
+
+  if (role === 'assistant_coach') {
+    return null
   }
 
   if (!team) {

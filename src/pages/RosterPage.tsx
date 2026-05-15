@@ -6,7 +6,7 @@ import {
   useUpdatePlayer,
   useDeletePlayer,
 } from '@/hooks/usePlayers'
-import { useTeamById } from '@/hooks/useTeams'
+import { useTeamById, useCanManageTeam } from '@/hooks/useTeams'
 import type { Database } from '@/types/supabase'
 
 type Player = Database['public']['Tables']['players']['Row']
@@ -24,6 +24,7 @@ export function RosterPage({ teamId }: RosterPageProps) {
   const createPlayer = useCreatePlayer()
   const updatePlayer = useUpdatePlayer()
   const deletePlayer = useDeletePlayer()
+  const canManageTeam = useCanManageTeam(teamId)
 
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -102,12 +103,14 @@ export function RosterPage({ teamId }: RosterPageProps) {
       </div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{team?.name} - Roster</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {showForm ? 'Cancel' : 'Add Player'}
-        </button>
+        {canManageTeam && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            {showForm ? 'Cancel' : 'Add Player'}
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -342,20 +345,24 @@ export function RosterPage({ teamId }: RosterPageProps) {
                         no {player.restricted_positions.join(', ')}
                       </span>
                     )}
-                    <button
-                      onClick={() => setEditingId(player.id)}
-                      className="text-blue-700 hover:text-blue-900 text-xs font-semibold"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      aria-label={`Remove ${player.first_name} ${player.last_name}`}
-                      disabled={deletePlayer.isPending}
-                      onClick={() => handleDelete(player)}
-                      className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      <span className="text-base leading-none">×</span>
-                    </button>
+                    {canManageTeam && (
+                      <>
+                        <button
+                          onClick={() => setEditingId(player.id)}
+                          className="text-blue-700 hover:text-blue-900 text-xs font-semibold"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          aria-label={`Remove ${player.first_name} ${player.last_name}`}
+                          disabled={deletePlayer.isPending}
+                          onClick={() => handleDelete(player)}
+                          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          <span className="text-base leading-none">×</span>
+                        </button>
+                      </>
+                    )}
                   </span>
                 </li>
               )

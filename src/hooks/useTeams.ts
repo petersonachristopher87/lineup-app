@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teamService } from '@/lib/supabase/teamService'
+import { useAuth } from '@/hooks/useAuth'
+
+export type TeamRole = 'creator' | 'head_coach' | 'assistant_coach' | null
 
 export function useUserTeams() {
   return useQuery({
@@ -88,6 +91,43 @@ export function useTeamMembers(teamId: string | undefined) {
     queryFn: () => (teamId ? teamService.getTeamMembers(teamId) : []),
     enabled: !!teamId,
   })
+}
+
+export function useTeamCoaches(teamId: string | undefined) {
+  return useQuery({
+    queryKey: ['teamCoaches', teamId],
+    queryFn: () => (teamId ? teamService.getTeamCoaches(teamId) : []),
+    enabled: !!teamId,
+  })
+}
+
+/**
+ * Returns the current user's role on a given team:
+ *  - 'creator'         — original team creator (has all powers plus delete)
+ *  - 'head_coach'      — team_members row with role 'head_coach'
+ *  - 'assistant_coach' — team_members row with role 'assistant_coach'
+ *  - null              — not loaded, or no relationship to this team
+ *
+ * Derived from existing queries (no extra fetch).
+ */
+export function useCurrentUserRole(teamId: string | undefined): TeamRole {
+  const { user } = useAuth()
+  const { data: team } = useTeamById(teamId)
+  const { data: members = [] } = useTeamMembers(teamId)
+
+  if (!user?.id || !teamId || !team) return null
+  if (team.created_by === user.id) return 'creator'
+  const member = members.find((m) => m.user_id === user.id)
+  return member ? (member.role as TeamRole) : null
+}
+
+export function useCanManageTeam(teamId: string | undefined): boolean {
+  const role = useCurrentUserRole(teamId)
+  return role === 'creator' || role === 'head_coach'
+}
+
+export function useCanDeleteTeam(teamId: string | undefined): boolean {
+  return useCurrentUserRole(teamId) === 'creator'
 }
 
 export function useInviteAssistant() {

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useTeamById } from '@/hooks/useTeams'
+import { useTeamById, useCanManageTeam } from '@/hooks/useTeams'
 
 interface TeamDetailPageProps {
   teamId: string
@@ -8,6 +8,7 @@ interface TeamDetailPageProps {
 export function TeamDetailPage({ teamId }: TeamDetailPageProps) {
   const navigate = useNavigate()
   const { data: team, isLoading } = useTeamById(teamId)
+  const canManageTeam = useCanManageTeam(teamId)
 
   if (isLoading) {
     return <div className="text-center py-12">Loading...</div>
@@ -86,28 +87,34 @@ export function TeamDetailPage({ teamId }: TeamDetailPageProps) {
           </button>
 
           <button
-            onClick={() => navigate(`/team/${teamId}/profile`)}
-            className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow"
-          >
-            <h2 className="text-lg font-bold text-gray-900">Team Settings</h2>
-            <p className="text-sm text-gray-600 mt-1">Name, year, logo</p>
-          </button>
-
-          <button
             onClick={() => navigate(`/team/${teamId}/coaches`)}
             className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow"
           >
             <h2 className="text-lg font-bold text-gray-900">Coaches</h2>
-            <p className="text-sm text-gray-600 mt-1">Invite, manage members</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {canManageTeam ? 'Invite, manage members' : 'View coaches on this team'}
+            </p>
           </button>
 
-          <button
-            onClick={() => navigate(`/team/${teamId}/settings`)}
-            className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow"
-          >
-            <h2 className="text-lg font-bold text-gray-900">Game Rules</h2>
-            <p className="text-sm text-gray-600 mt-1">Rules, equity, positions</p>
-          </button>
+          {canManageTeam && (
+            <>
+              <button
+                onClick={() => navigate(`/team/${teamId}/profile`)}
+                className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow"
+              >
+                <h2 className="text-lg font-bold text-gray-900">Team Settings</h2>
+                <p className="text-sm text-gray-600 mt-1">Name, year, logo</p>
+              </button>
+
+              <button
+                onClick={() => navigate(`/team/${teamId}/settings`)}
+                className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow"
+              >
+                <h2 className="text-lg font-bold text-gray-900">Game Rules</h2>
+                <p className="text-sm text-gray-600 mt-1">Rules, equity, positions</p>
+              </button>
+            </>
+          )}
         </div>
       </main>
     </div>

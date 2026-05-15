@@ -9,6 +9,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
@@ -127,16 +128,25 @@ export function LoginPage() {
 
             {(mode === 'signin' || mode === 'signup') && (
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-semibold text-gray-900"
-                >
-                  Password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-semibold text-gray-900"
+                  >
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-xs font-semibold text-blue-700 hover:text-blue-900"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete={
                     mode === 'signup' ? 'new-password' : 'current-password'
                   }
@@ -160,7 +170,7 @@ export function LoginPage() {
                 <input
                   id="confirm-password"
                   name="confirm-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   required
                   value={confirmPassword}

@@ -1,6 +1,6 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useCreateGame } from '@/hooks/useGames'
-import { useTeamSettings } from '@/hooks/useTeams'
+import { useTeamSettings, useCurrentUserRole } from '@/hooks/useTeams'
 import { useNavigate } from 'react-router-dom'
 
 interface CreateGamePageProps {
@@ -9,8 +9,15 @@ interface CreateGamePageProps {
 
 export function CreateGamePage({ teamId }: CreateGamePageProps) {
   const navigate = useNavigate()
+  const role = useCurrentUserRole(teamId)
   const { data: settings } = useTeamSettings(teamId)
   const createGame = useCreateGame()
+
+  useEffect(() => {
+    if (role === 'assistant_coach') {
+      navigate(`/team/${teamId}/games`, { replace: true })
+    }
+  }, [role, teamId, navigate])
 
   const [formData, setFormData] = useState({
     opponent_name: '',
@@ -37,6 +44,10 @@ export function CreateGamePage({ teamId }: CreateGamePageProps) {
     } catch (error) {
       console.error('Failed to create game:', error)
     }
+  }
+
+  if (role === 'assistant_coach') {
+    return null
   }
 
   return (

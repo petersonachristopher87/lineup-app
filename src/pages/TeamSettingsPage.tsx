@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTeamById, useTeamSettings, useUpdateTeamSettings } from '@/hooks/useTeams'
+import {
+  useTeamById,
+  useTeamSettings,
+  useUpdateTeamSettings,
+  useCurrentUserRole,
+} from '@/hooks/useTeams'
 import { getTemplate } from '@/lib/templateOverrides'
 import { PositionCategoryEditor } from '@/components/PositionCategoryEditor'
 
@@ -25,9 +30,16 @@ interface RestDayRuleDraft {
 
 export function TeamSettingsPage({ teamId }: TeamSettingsPageProps) {
   const navigate = useNavigate()
+  const role = useCurrentUserRole(teamId)
   const { data: team } = useTeamById(teamId)
   const { data: settings } = useTeamSettings(teamId)
   const updateSettings = useUpdateTeamSettings()
+
+  useEffect(() => {
+    if (role === 'assistant_coach') {
+      navigate(`/team/${teamId}`, { replace: true })
+    }
+  }, [role, teamId, navigate])
 
   const [draft, setDraft] = useState<{
     equity_enabled: boolean
@@ -78,6 +90,10 @@ export function TeamSettingsPage({ teamId }: TeamSettingsPageProps) {
       },
     })
   }, [settings, draft])
+
+  if (role === 'assistant_coach') {
+    return null
+  }
 
   if (!team || !draft) {
     return <div className="text-center py-12">Loading settings...</div>
