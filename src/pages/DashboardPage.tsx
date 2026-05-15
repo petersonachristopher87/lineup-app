@@ -81,15 +81,15 @@ export function DashboardPage() {
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">Lineup Manager</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col items-end justify-center gap-1">
+              <ProfileMenu />
               <button
                 onClick={() => setShowGuide(true)}
                 title="First-time walkthrough"
-                className="text-blue-700 hover:text-blue-900 text-sm font-semibold"
+                className="text-blue-700 hover:text-blue-900 text-xs font-semibold leading-none"
               >
                 Guide ?
               </button>
-              <ProfileMenu />
             </div>
           </div>
         </div>

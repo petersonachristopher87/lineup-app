@@ -42,12 +42,20 @@ export const teamInvitationService = {
   /**
    * Pending invitations addressed to the current user's email. Used by the
    * Dashboard to auto-claim any team_members rows on sign-in.
+   *
+   * The email filter is essential: head coaches have an RLS policy that lets
+   * them read every invite for their teams, so without this filter the head
+   * coach's own session would auto-claim invites they sent to others.
    */
   async listPendingForMe(): Promise<Invitation[]> {
+    const { data: user } = await supabase.auth.getUser()
+    const email = user.user?.email?.toLowerCase()
+    if (!email) return []
     const { data, error } = await supabase
       .from('team_invitations')
       .select('*')
       .is('accepted_at', null)
+      .ilike('email', email)
     if (error) throw error
     return (data ?? []) as Invitation[]
   },
@@ -70,6 +78,14 @@ export const teamInvitationService = {
     if (invErr) throw invErr
     const invitation = inv as Invitation
     if (invitation.accepted_at) return invitation
+
+    // Safety belt: head coaches have RLS read access to every invite on their
+    // teams, so the caller could be someone other than the addressee. Only
+    // claim if the current user's email matches the invite's email.
+    const callerEmail = user.user.email?.toLowerCase()
+    if (!callerEmail || callerEmail !== invitation.email.toLowerCase()) {
+      return invitation
+    }
 
     // Try to insert the team_member row. Ignore the unique-violation case
     // (member already exists) — happens if a head coach manually re-added
