@@ -20,6 +20,17 @@ export interface AutoFillContext {
   positions: string[]
   positionCategories: PositionCategories
   blockedPitcherIds: Set<string>
+  /**
+   * Start filling from this inning (1-indexed). Innings before this are
+   * assumed already assigned via `priorAssignments`. Defaults to 1.
+   */
+  startInning?: number
+  /**
+   * Existing assignments for innings `[1, startInning)`. The engine replays
+   * them into per-player stats so equity decisions for `startInning` onward
+   * reflect what already happened in the game.
+   */
+  priorAssignments?: AutoFillAssignment[]
 }
 
 export interface AutoFillAssignment {
@@ -126,7 +137,53 @@ export function autoFillPositions(ctx: AutoFillContext): AutoFillAssignment[] {
   const fieldingPositions = ctx.positions.filter((p) => !benchSet.has(p))
   const benchPositions = ctx.positions.filter((p) => benchSet.has(p))
 
-  for (let inning = 1; inning <= ctx.inningsCount; inning++) {
+  const startInning = ctx.startInning ?? 1
+
+  // Replay any prior assignments into stats so a partial re-fill (mobile
+  // "re-fill from this inning onward") makes equity decisions informed by
+  // the history of the game, not from a zeroed slate.
+  if (ctx.priorAssignments && ctx.priorAssignments.length > 0) {
+    const byInning = new Map<number, AutoFillAssignment[]>()
+    for (const a of ctx.priorAssignments) {
+      if (a.inning >= startInning) continue
+      if (!byInning.has(a.inning)) byInning.set(a.inning, [])
+      byInning.get(a.inning)!.push(a)
+    }
+    const sortedInnings = [...byInning.keys()].sort((x, y) => x - y)
+    for (const inning of sortedInnings) {
+      const rows = byInning.get(inning) ?? []
+      const playersThisInning = new Set<string>()
+      for (const r of rows) {
+        const s = stats[r.player_id]
+        if (!s) continue
+        playersThisInning.add(r.player_id)
+        const cat = categoryForPosition(r.position, ctx.positionCategories)
+        if (!cat) continue
+        if (cat === 'bench') {
+          s.benchStreak += 1
+          s.lastPos = null
+          s.categoryCounts.bench = (s.categoryCounts.bench ?? 0) + 1
+        } else {
+          s.benchStreak = 0
+          s.lastPos = r.position
+          s.fieldingInnings += 1
+          s.positionCounts[r.position] = (s.positionCounts[r.position] ?? 0) + 1
+          s.categoryCounts[cat] = (s.categoryCounts[cat] ?? 0) + 1
+        }
+      }
+      // Players in attendance but missing from this inning's prior data are
+      // implicitly benched (the engine's normal behavior for "didn't field").
+      for (const p of ctx.attendingPlayers) {
+        if (playersThisInning.has(p.id)) continue
+        const s = stats[p.id]
+        s.benchStreak += 1
+        s.lastPos = null
+        s.categoryCounts.bench = (s.categoryCounts.bench ?? 0) + 1
+      }
+    }
+  }
+
+  for (let inning = startInning; inning <= ctx.inningsCount; inning++) {
     const used = new Set<string>()
 
     for (const position of fieldingPositions) {

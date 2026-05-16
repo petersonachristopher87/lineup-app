@@ -26,6 +26,8 @@ import { autoFillBattingOrder, autoFillPositions } from '@/lib/autoFillEngine'
 import { PrintableLineup } from '@/components/PrintableLineup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatDate } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobileLineup } from '@/components/lineup/MobileLineup'
 
 interface LineupGridPageProps {
   gameId: string
@@ -34,6 +36,7 @@ interface LineupGridPageProps {
 
 export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { data: game } = useGameById(gameId)
   const { data: teamSettings } = useTeamSettings(teamId)
   const { data: teamPlayers = [] } = useTeamPlayers(teamId)
@@ -434,6 +437,95 @@ export function LineupGridPage({ gameId, teamId }: LineupGridPageProps) {
     const orderedSet = new Set(ordered)
     const missing = defaultPositions.filter((p) => !orderedSet.has(p))
     positions = [...ordered, ...missing]
+  }
+
+  // Mobile layout: distinct view optimized for in-game dugout edits.
+  if (isMobile) {
+    const notBattingPlayers = [
+      ...nonAttendingByStatus.maybe,
+      ...nonAttendingByStatus.absent,
+      ...nonAttendingByStatus.not_set,
+    ]
+
+    const handleSaveBattingOrderMobile = (next: string[]) => {
+      setBattingOrder(next)
+      setOrderDirty(true)
+      updateLineup.mutate({ gameId, batting_order: next })
+    }
+
+    const handleAddToLineupMobile = (playerId: string) => {
+      setAttendance.mutate({ gameId, playerId, status: 'attending' })
+      const next = [...battingOrder, playerId]
+      setBattingOrder(next)
+      setOrderDirty(true)
+      updateLineup.mutate({ gameId, batting_order: next })
+    }
+
+    const handleSetPositionMobile = (
+      inning: number,
+      playerId: string,
+      position: string
+    ) => {
+      setPosition.mutate({ gameId, inning, player_id: playerId, position })
+    }
+
+    const handleRefillFromInningMobile = (startInning: number) => {
+      const effectiveStart = Math.max(
+        startInning,
+        (game.innings_played ?? 0) + 1
+      )
+      const priors = positionAssignments
+        .filter((a) => a.inning < effectiveStart)
+        .map((a) => ({
+          inning: a.inning,
+          player_id: a.player_id,
+          position: a.position,
+        }))
+      const newAssignments = autoFillPositions({
+        attendingPlayers: attendingPlayers.map((p) => ({
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          jersey_number: p.jersey_number,
+          preferred_positions: p.preferred_positions,
+          restricted_positions: (p as any).restricted_positions ?? null,
+        })),
+        inningsCount: game.innings_count,
+        positions,
+        positionCategories: categories,
+        blockedPitcherIds,
+        startInning: effectiveStart,
+        priorAssignments: priors,
+      })
+      bulkSetPositions.mutate(
+        { gameId, assignments: newAssignments },
+        {
+          onError: (err) => {
+            window.alert(
+              `Re-fill failed: ${err instanceof Error ? err.message : String(err)}`
+            )
+          },
+        }
+      )
+    }
+
+    return (
+      <MobileLineup
+        game={game}
+        teamId={teamId}
+        attendingPlayers={attendingPlayers}
+        notBattingPlayers={notBattingPlayers}
+        battingOrder={battingOrder}
+        positions={positions}
+        positionCategories={categories}
+        positionAssignments={positionAssignments}
+        equityWarnings={equityWarnings}
+        onSaveBattingOrder={handleSaveBattingOrderMobile}
+        onAddToLineup={handleAddToLineupMobile}
+        onSetPosition={handleSetPositionMobile}
+        onRefillFromInning={handleRefillFromInningMobile}
+      />
+    )
   }
 
   const handleColumnDrop = (e: React.DragEvent) => {

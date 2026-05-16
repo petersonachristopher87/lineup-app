@@ -67,6 +67,20 @@ export const positionAssignmentService = {
     assignments: Array<{ inning: number; player_id: string; position: string }>
   ) {
     if (assignments.length === 0) return
+
+    // Clear existing rows for the innings being set, so stale assignments
+    // (e.g. a player who was attending earlier and is now absent) don't
+    // linger after an auto-fill / prefill run. Scoped to just the innings
+    // in the payload so mobile re-fill from inning N doesn't disturb
+    // innings 1..N-1.
+    const innings = Array.from(new Set(assignments.map((a) => a.inning)))
+    const { error: delErr } = await supabase
+      .from('position_assignments')
+      .delete()
+      .eq('game_id', gameId)
+      .in('inning', innings)
+    if (delErr) throw delErr
+
     // Two-pass upsert avoids the partial-unique constraint on
     // (game_id, inning, position) where position != 'BENCH'. Pass 1 parks
     // every player at BENCH for their inning (no constraint conflict); pass
